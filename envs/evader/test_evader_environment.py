@@ -1,4 +1,4 @@
-from evader_environment import EvaderEnvironment
+from envs.evader.evader_environment import EvaderEnvironment
 from pettingzoo.test import parallel_api_test, parallel_seed_test
 import unittest
 import numpy as np
@@ -39,7 +39,7 @@ class TestEvaderEnvironment(unittest.TestCase):
         with self.assertRaises(ValueError):
             env_fn(max_cycles=-2)
 
-    def test_agent_movement(self):
+    def test_agent_movement_simple(self):
         env = EvaderEnvironment(
             max_cycles=5,
             world_size=(100, 100),
@@ -61,26 +61,33 @@ class TestEvaderEnvironment(unittest.TestCase):
         self.assertEqual((purs_0_coord[0] + 5, purs_0_coord[1]), purs_0_coord_after)
         self.assertEqual(purs_1_coord, purs_1_coord_after)
 
-        purs_0_coord = purs_0_coord_after
-        purs_1_coord = purs_1_coord_after
-
-        actions = {"pursuer_0": [10, 6], "pursuer_1": [env.world_size[0], 0]}
+    def test_agent_movement_rotation_only(self):
+        env = EvaderEnvironment(
+            max_cycles=5,
+            world_size=(100, 100),
+            num_pursuers=2,
+        )
+        np.random.seed(100)
+        env.reset()
+        # val1 = velocity, val2 = steering angle
+        actions = {"pursuer_0": [0, 10]}
+        p_coord = env.agent_map["pursuer_0"].get_coords()
+        p_vel_phi = env.agent_map["pursuer_0"].get_vel_phi()
 
         env.step(actions)
 
-        purs_0_coord_after = env.agent_map["pursuer_0"].get_coords()
-        purs_1_coord_after = env.agent_map["pursuer_1"].get_coords()
+        p_coord_after = env.agent_map["pursuer_0"].get_coords()
+        p_vel_phi_after = env.agent_map["pursuer_0"].get_vel_phi()
 
         self.assertEqual(
-            (
-                purs_0_coord[0] + (10 * np.cos(np.deg2rad(6))),
-                purs_0_coord[1] + (10 * np.sin(np.deg2rad(6))),
-            ),
-            purs_0_coord_after,
+            p_coord,
+            p_coord_after
         )
 
-        self.assertEqual((env.world_size[0], purs_1_coord[1]), purs_1_coord_after)
-
+        self.assertEqual(
+            (p_vel_phi[0], p_vel_phi[1] + 10),
+            p_vel_phi_after
+        )
 
 if __name__ == "__main__":
     unittest.main()

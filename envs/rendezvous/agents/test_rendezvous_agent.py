@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 
-class TestPursuer(unittest.TestCase):
+class TestRendezvous(unittest.TestCase):
     def test_move(self):
         p = Pursuer("p", 10, 10, 0, 0, 10, 10)
 

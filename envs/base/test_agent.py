@@ -1,11 +1,11 @@
-from envs.evader.agents.pursuer_agent import Pursuer
+from envs.base.agent import Agent
 import unittest
 import numpy as np
 
 
-class TestPursuer(unittest.TestCase):
+class TestAgent(unittest.TestCase):
     def test_move(self):
-        p = Pursuer("p", 10, 10, 0, 0, 10, 10)
+        p = Agent("p", 10, 10, 0, 0, 10, 10)
 
         p_coord = p.get_coords()
         p.move()
