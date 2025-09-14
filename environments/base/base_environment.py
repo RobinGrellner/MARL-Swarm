@@ -5,6 +5,7 @@ from typing import Dict, Tuple, Optional
 from pettingzoo import ParallelEnv
 import numpy as np
 from gymnasium import spaces
+import functools
 
 
 # TODO: Implement debug-logging
@@ -68,8 +69,9 @@ class BaseEnv(ABC, ParallelEnv):
         )
 
         # Setting up Necessary Environment variables
-        self.agents = self.agent_handler
-        self.possible_agents = self.agents
+        self.agent_names = self.agent_handler.agents
+        self.agents = self.agent_names
+        self.possible_agents = self.agent_names
         self.max_steps = max_steps
         self.torus = torus
         self.world_size = world_size
@@ -77,11 +79,23 @@ class BaseEnv(ABC, ParallelEnv):
 
     @property
     def observation_spaces(self) -> Dict[str, spaces.Box]:
+        """Dictionary mapping agent identifiers to their observation spaces."""
         return self._observation_space
 
     @property
     def action_spaces(self) -> Dict[str, spaces.Box]:
+        """Dictionary mapping agent identifiers to their action spaces."""
         return self._action_space
+
+    @functools.lru_cache(maxsize=None)
+    def observation_space(self, agent: str):
+        """Return the observation space for a single agent."""
+        return self._observation_space[agent]
+
+    @functools.lru_cache(maxsize=None)
+    def action_space(self, agent: str):
+        """Return the action space for a single agent."""
+        return self._action_space[agent]
 
     def reset(
         self, seed: Optional[int] = None, options: Optional[dict] = None
@@ -98,7 +112,9 @@ class BaseEnv(ABC, ParallelEnv):
 
         # Specific resets
         self._reset_agents()
-        return self._get_observations()
+        # All Agents are active at the Beginning of the episode
+        self.agents = list(self.agent_names)
+        return self._get_observations(), self._get_infos()
 
     def step(
         self, actions: Dict[str, np.ndarray]
@@ -114,16 +130,18 @@ class BaseEnv(ABC, ParallelEnv):
         """
         self._update_agents(actions)
         self._intermediate_steps()
-        self._calculate_rewards()
+
         observations = self._get_observations()
-        rewards = self._calculate_rewards()
+        rewards = self._calculate_rewards(actions)
         terminations = self._check_terminations()
         truncations = self._check_truncations()
         infos = self._get_infos()
 
         # Update step count
         self.step_count += 1
-        terminations = self.step_count >= self.max_steps
+        if self.step_count >= self.max_steps:
+            for agent in self.agents:
+                truncations[agent] = True
         return observations, rewards, terminations, truncations, infos
 
     def render(self):
@@ -185,51 +203,51 @@ class BaseEnv(ABC, ParallelEnv):
     @abstractmethod
     def _get_observation_space():
         """Logic on how agents observe their surroundings."""
-        pass
+        raise NotImplementedError
 
     # Abstract methods for reset
     @abstractmethod
     def _reset_agents(self) -> None:
         """Logic for resetting the agents."""
-        pass
+        raise NotImplementedError
 
     # Abstract methods for steps
     @abstractmethod
-    def _calculate_rewards(self) -> dict:
+    def _calculate_rewards(self, actions) -> dict:
         """Logic for calculating the rewards."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _get_observations(self) -> dict:
         """Logic for retrieving observations."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _check_terminations(self) -> dict:
         """Checking for terminations/end conditions."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _check_truncations(self) -> dict:
         """Checking for truncations."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _get_infos(self) -> dict:
         """Getting infos"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _intermediate_steps(self):
         """Handle any additional steps that need to be done. If no steps need to be done, just pass."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _render(self):
         """Render the Environment."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _close(self):
         """Close the Envorinment"""
-        pass
+        raise NotImplementedError

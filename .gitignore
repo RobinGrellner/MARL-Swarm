@@ -164,7 +164,7 @@ cython_debug/
 
 #ignore models
 *.zip
-./modles/*
+./models/*
 
 #VSCode
 ./.VSCode

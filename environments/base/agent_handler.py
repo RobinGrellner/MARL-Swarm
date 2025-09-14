@@ -70,8 +70,8 @@ class AgentHandler:
         lin_acs = actions[:, 0]
         ang_acs = actions[:, 1]
         if self.kinematics == "single":
-            self.linear_vels = np.clip(lin_acs, -self.v_max, self.v_max)
-            self.angular_vels = np.clip(ang_acs, -self.omega_max, self.omega_max)
+            self.linear_vels = lin_acs
+            self.angular_vels = ang_acs
         else:
             self.linear_vels = np.clip(
                 self.linear_vels + lin_acs, -self.v_max, self.v_max
@@ -79,8 +79,10 @@ class AgentHandler:
             self.angular_vels = np.clip(
                 self.angular_vels + ang_acs, -self.omega_max, self.omega_max
             )
+        # Update orientations
         self.orientations = self.orientations + self.angular_vels
         self.orientations = (self.orientations + math.pi) % (2 * math.pi) - math.pi
+        # Compute cartesian displacements
         dx = (self.linear_vels * np.cos(self.orientations)).astype(np.float32)
         dy = (self.linear_vels * np.sin(self.orientations)).astype(np.float32)
         self.positions[:, 0] = self.positions[:, 0] + dx
