@@ -55,6 +55,7 @@ class BaseEnv(ABC, ParallelEnv):
         acc_v_max: float = 1.0,
         acc_omega_max: float = 1.0,
         max_steps: int = 1000,
+        render_mode: Optional[str] = None,
     ) -> None:
         super().__init__()
 
@@ -75,6 +76,7 @@ class BaseEnv(ABC, ParallelEnv):
         self.max_steps = max_steps
         self.torus = torus
         self.world_size = world_size
+        self.render_mode = render_mode
         self._setup_spaces()
 
     @property
@@ -142,6 +144,7 @@ class BaseEnv(ABC, ParallelEnv):
         if self.step_count >= self.max_steps:
             for agent in self.agents:
                 truncations[agent] = True
+        self.render()
         return observations, rewards, terminations, truncations, infos
 
     def render(self):
@@ -201,7 +204,7 @@ class BaseEnv(ABC, ParallelEnv):
 
     # Abstract methods for setup
     @abstractmethod
-    def _get_observation_space():
+    def _get_observation_space(self) -> Dict[str, spaces.Box]:
         """Logic on how agents observe their surroundings."""
         raise NotImplementedError
 

@@ -6,14 +6,99 @@ build-backend = "setuptools.build_meta"
 name = "marl-swarm"
 version = "0.1.0"
 description = "Multi-Agent Reinforcement Learning Swarm Environments"
+readme = "README.md"
 requires-python = ">=3.8"
+authors = [
+    {name = "Robin", email = "robin@example.com"}
+]
 dependencies = [
-    # "numpy",
-    # "pygame",
-    # "gymnasium", 
-    # "pettingzoo",
-    # "pytest",
+    "numpy>=1.21.0",
+    "torch>=2.0.0",
+    "stable-baselines3>=2.0.0",
+    "gymnasium>=0.28.0",
+    "pettingzoo>=1.23.0",
+    "supersuit>=3.9.0",
+    "pygame>=2.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+cli = [
+    "questionary>=2.0.0",
+    "rich>=13.0.0",
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["environments*", "policies*", "training*", "evaluation*"]
+
+[tool.pytest.ini_options]
+testpaths = ["environments/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.black]
+line-length = 120
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.git
+  | \.venv
+  | venv
+  | __pycache__
+  | \.pytest_cache
+  | envs
+)/
+'''
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "*.egg-info",
+    "build",
+    "dist",
+    ".pytest_cache",
+    "envs",
+]
+
+[tool.ruff.lint]
+# Enable these rule sets
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "N",    # pep8-naming
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Do not perform function calls in argument defaults
+    "B007",   # Loop variable not used (common in enumerate)
+    "C901",   # Function is too complex
+    "SIM108", # Use ternary operator (sometimes less readable)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+
+[tool.ruff.lint.isort]
+known-first-party = ["environments", "policies", "training", "evaluation"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]

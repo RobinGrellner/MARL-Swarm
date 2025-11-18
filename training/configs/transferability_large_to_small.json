@@ -1,0 +1,122 @@
+{
+  "experiments": {
+    "transfer_50_to_varied": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 2
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 50,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        12,
+        16,
+        24,
+        32,
+        40,
+        50,
+        75,
+        100,
+        150,
+        200
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "transfer_100_to_varied": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 2
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 100,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        75,
+        100,
+        150,
+        200,
+        300
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "transfer_200_to_varied": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 2
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 200,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        10,
+        25,
+        50,
+        100,
+        150,
+        200,
+        300,
+        400,
+        500
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    }
+  }
+}

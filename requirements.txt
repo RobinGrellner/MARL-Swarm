@@ -1,5 +1,17 @@
-numpy
-pandas
-pettingzoo
-pytorch
-pytest
+# Core dependencies for MARL-Swarm
+# Note: For modern dependency management, use: uv sync
+# Or install in editable mode: uv pip install -e .
+
+numpy>=1.21.0
+torch>=2.0.0
+stable-baselines3>=2.0.0
+gymnasium>=0.28.0
+pettingzoo>=1.23.0
+supersuit>=3.9.0
+pygame>=2.1.0
+
+# Development dependencies (optional)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=23.0.0
+# ruff>=0.1.0

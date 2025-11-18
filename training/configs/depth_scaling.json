@@ -1,0 +1,44 @@
+{
+  "experiments": {
+    "depth_1": {
+      "train_config": {
+        "embed_config": {
+          "phi_layers": 1
+        }
+      },
+      "env_config": {
+        "num_agents": 20
+      }
+    },
+    "depth_2": {
+      "train_config": {
+        "embed_config": {
+          "phi_layers": 2
+        }
+      },
+      "env_config": {
+        "num_agents": 20
+      }
+    },
+    "depth_3": {
+      "train_config": {
+        "embed_config": {
+          "phi_layers": 3
+        }
+      },
+      "env_config": {
+        "num_agents": 20
+      }
+    },
+    "depth_4": {
+      "train_config": {
+        "embed_config": {
+          "phi_layers": 4
+        }
+      },
+      "env_config": {
+        "num_agents": 20
+      }
+    }
+  }
+}

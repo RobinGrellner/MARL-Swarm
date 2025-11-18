@@ -1,7 +1,6 @@
 from environments.base.base_environment import BaseEnv
-from environments.base.agent_handler import AgentHandler
-import environments.rendezvous.observations as observation_helpers
-from typing import Dict, List, Tuple, Optional, Any
+from environments.rendezvous.observations_vectorized import compute_observations_vectorized
+from typing import Dict, List, Optional
 import numpy as np
 import math
 import pygame
@@ -37,12 +36,15 @@ class RendezvousEnv(BaseEnv):
         comm_radius: Optional[float] = None,
         render_mode: Optional[str] = "",
         fps: int = 60,
+        break_distance_threshold: Optional[float] = None,
+        max_agents: Optional[int] = None,
     ):
-        # Store rendezvous-specific parameters
+        # Store rendezvous-specific parameters needed before base init
         self.csv_log_path = csv_log_path
         self.obs_model = obs_model.lower() if obs_model is not None else "global_basic"
         self.comm_radius = comm_radius
-        self.render_mode = render_mode
+        self.break_distance_threshold = break_distance_threshold
+        self.max_agents = max_agents if max_agents is not None else num_agents
 
         # Initialize base environment
         super().__init__(
@@ -55,6 +57,7 @@ class RendezvousEnv(BaseEnv):
             acc_v_max=acc_v_max,
             acc_omega_max=acc_omega_max,
             max_steps=max_steps,
+            render_mode=render_mode,
         )
 
         # Precompute constants for reward
@@ -149,7 +152,8 @@ class RendezvousEnv(BaseEnv):
         # Save dimensions
         self._neighbour_feature_dim = neighbour_feature_dim
         self._local_feature_dim = local_feature_dim
-        self._max_neighbours = num_agents - 1
+        # Use max_agents to size observations for scale-invariant learning
+        self._max_neighbours = self.max_agents - 1
 
         # Total observation length: local + neighbour*max_neighbours + mask
         self.obs_total_dim = (
@@ -205,174 +209,24 @@ class RendezvousEnv(BaseEnv):
         return diff
 
     # ------------------------------------------------------------------
-    # Observations
+    # Observations (Vectorized)
     # ------------------------------------------------------------------
     def _get_observations(self) -> Dict[str, np.ndarray]:
-        """Construct observations for all agents."""
-        observations: Dict[str, np.ndarray] = {}
-        positions = self.agent_handler.positions
-        orientations = self.agent_handler.orientations
-        linear_vels = self.agent_handler.linear_vels
-        angular_vels = self.agent_handler.angular_vels
-        kin = self.agent_handler.kinematics
-        num_agents = self.agent_handler.num_agents
-
-        # Precompute velocity vectors when needed
-        velocity_vectors: Optional[np.ndarray] = None
-        if self.obs_model == "global_extended":
-            velocity_vectors = np.stack(
-                [
-                    linear_vels * np.cos(orientations),
-                    linear_vels * np.sin(orientations),
-                ],
-                axis=1,
-            )
-
-        for idx, name in enumerate(self.agent_names):
-            pos_i = positions[idx]
-            theta_i = orientations[idx]
-
-            # Classic observation
-            if self.obs_model == "classic":
-                mean_pos = np.mean(positions, axis=0)
-                if kin == "single":
-                    obs_vec = np.array(
-                        [
-                            pos_i[0],
-                            pos_i[1],
-                            mean_pos[0],
-                            mean_pos[1],
-                            linear_vels[idx],
-                            theta_i,
-                        ],
-                        dtype=np.float32,
-                    )
-                else:
-                    obs_vec = np.array(
-                        [
-                            pos_i[0],
-                            pos_i[1],
-                            mean_pos[0],
-                            mean_pos[1],
-                            linear_vels[idx],
-                            angular_vels[idx],
-                            theta_i,
-                        ],
-                        dtype=np.float32,
-                    )
-                observations[name] = obs_vec
-                continue
-
-            # Distance and bearing to nearest wall
-            if self.torus:
-                d_wall = float(self.world_size)
-                phi_wall = 0.0
-            else:
-                dx_left = pos_i[0]
-                dx_right = self.world_size - pos_i[0]
-                dy_bottom = pos_i[1]
-                dy_top = self.world_size - pos_i[1]
-                dists = [dx_left, dx_right, dy_bottom, dy_top]
-                d_wall = float(min(dists))
-                min_idx = int(np.argmin(dists))
-                if min_idx == 0:
-                    target = np.array([0.0, pos_i[1]], dtype=np.float32)
-                elif min_idx == 1:
-                    target = np.array([self.world_size, pos_i[1]], dtype=np.float32)
-                elif min_idx == 2:
-                    target = np.array([pos_i[0], 0.0], dtype=np.float32)
-                else:
-                    target = np.array([pos_i[0], self.world_size], dtype=np.float32)
-                delta_w = target - pos_i
-                phi_wall = float(math.atan2(delta_w[1], delta_w[0]) - theta_i)
-                phi_wall = (phi_wall + math.pi) % (2 * math.pi) - math.pi
-
-            local_feats: List[float] = [d_wall, phi_wall]
-            if self.obs_model == "local_comm":
-                # count neighbours within comm radius
-                count_i = 0
-                for j in range(num_agents):
-                    if j == idx:
-                        continue
-                    if (
-                        np.linalg.norm(self.delta(pos_i, positions[j]))
-                        <= self.comm_radius
-                    ):
-                        count_i += 1
-                local_feats.append(float(count_i))
-
-            # Build neighbour feature vector and mask
-            neighbour_features: List[float] = []
-            mask: List[float] = []
-            # Collect all neighbours and sort by distance for deterministic ordering
-            neighbour_info: List[Tuple[float, int]] = []
-            for j in range(num_agents):
-                if j == idx:
-                    continue
-                dvec = self.delta(pos_i, positions[j])
-                distance = np.linalg.norm(dvec)
-                neighbour_info.append((distance, j))
-            neighbour_info.sort(key=lambda x: x[0])
-
-            for _, j in neighbour_info:
-                pos_j = positions[j]
-                dvec = self.delta(pos_i, pos_j)
-                d_ij = float(np.linalg.norm(dvec))
-                valid = True
-                if self.obs_model.startswith("local") and d_ij > self.comm_radius:
-                    valid = False
-                # Bearing relative to i's orientation
-                if valid:
-                    bearing = float(math.atan2(dvec[1], dvec[0]) - theta_i)
-                    bearing = (bearing + math.pi) % (2 * math.pi) - math.pi
-                else:
-                    bearing = 0.0
-                features_j: List[float] = []
-                if valid:
-                    features_j.append(d_ij)
-                    features_j.append(bearing)
-                    # Relative orientation
-                    if self.obs_model in {
-                        "global_extended",
-                        "local_extended",
-                        "local_comm",
-                    }:
-                        psi = float(orientations[j] - theta_i)
-                        psi = (psi + math.pi) % (2 * math.pi) - math.pi
-                        features_j.append(psi)
-                    # Relative velocity
-                    if self.obs_model == "global_extended":
-                        assert velocity_vectors is not None
-                        rel_v = velocity_vectors[idx] - velocity_vectors[j]
-                        features_j.append(float(rel_v[0]))
-                        features_j.append(float(rel_v[1]))
-                    # Neighbourhood size of j for local_comm
-                    if self.obs_model == "local_comm":
-                        count_j = 0
-                        for k in range(num_agents):
-                            if k == j:
-                                continue
-                            if (
-                                np.linalg.norm(self.delta(pos_j, positions[k]))
-                                <= self.comm_radius
-                            ):
-                                count_j += 1
-                        features_j.append(float(count_j))
-                else:
-                    # Invalid neighbour: pad with zeros
-                    features_j = [0.0] * self._neighbour_feature_dim
-                neighbour_features.extend(features_j)
-                mask.append(1.0 if valid else 0.0)
-            # Convert to fixed length arrays
-            obs_vec = np.concatenate(
-                [
-                    np.asarray(local_feats, dtype=np.float32),
-                    np.asarray(neighbour_features, dtype=np.float32),
-                    np.asarray(mask, dtype=np.float32),
-                ]
-            )
-            observations[name] = obs_vec
-        return observations
+        """Construct observations for all agents using vectorized implementation."""
+        return compute_observations_vectorized(
+            positions=self.agent_handler.positions,
+            orientations=self.agent_handler.orientations,
+            linear_vels=self.agent_handler.linear_vels,
+            angular_vels=self.agent_handler.angular_vels,
+            agent_names=self.agent_names,
+            obs_model=self.obs_model,
+            kinematics=self.agent_handler.kinematics,
+            world_size=self.world_size,
+            torus=self.torus,
+            comm_radius=self.comm_radius,
+            max_neighbours=self._max_neighbours,
+            neighbour_feature_dim=self._neighbour_feature_dim,
+        )
 
     # ------------------------------------------------------------------
     # Reward computation
@@ -388,16 +242,29 @@ class RendezvousEnv(BaseEnv):
         contribution proportional to the magnitude of the agents' actions
         discourages unnecessarily large control inputs.
         """
-        # Sum of clipped distances
-        total_distance = 0.0
-        for i in range(len(self.agent_names)):
-            for j in range(i + 1, len(self.agent_names)):
-                d = np.linalg.norm(
-                    self.delta(
-                        self.agent_handler.positions[i], self.agent_handler.positions[j]
-                    )
-                )
-                total_distance += min(d, self.dc)
+        # Sum of clipped distances (vectorized for performance)
+        positions = self.agent_handler.positions
+        n = len(positions)
+
+        # Compute all pairwise displacements: shape (n, n, 2)
+        diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+
+        # Apply torus wrapping if enabled
+        if self.torus:
+            half = self.world_size / 2.0
+            diff = np.where(diff > half, diff - self.world_size, diff)
+            diff = np.where(diff < -half, diff + self.world_size, diff)
+
+        # Compute all pairwise distances: shape (n, n)
+        distances = np.linalg.norm(diff, axis=2)
+
+        # Extract upper triangle (avoid double-counting and self-distances)
+        upper_tri_indices = np.triu_indices(n, k=1)
+        pairwise_dists = distances[upper_tri_indices]
+
+        # Clip and sum
+        clipped_dists = np.minimum(pairwise_dists, self.dc)
+        total_distance = np.sum(clipped_dists)
         reward_distance = self.alpha * total_distance
 
         # Action penalty
@@ -415,8 +282,39 @@ class RendezvousEnv(BaseEnv):
     # Termination and truncation
     # ------------------------------------------------------------------
     def _check_terminations(self) -> Dict[str, bool]:
-        """Return early termination flags."""
+        """Return early termination flags.
+
+        If break_distance_threshold is set, terminate when all pairwise
+        distances are below the threshold (successful rendezvous).
+        """
         terminations = {name: False for name in self.agent_names}
+
+        if self.break_distance_threshold is not None:
+            # Vectorized computation of maximum pairwise distance
+            positions = self.agent_handler.positions
+            n = len(positions)
+
+            if self.torus:
+                # Compute all pairwise displacements (torus-aware)
+                # Shape: (n, n, 2)
+                diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+                # Apply torus wrapping
+                half = self.world_size / 2.0
+                diff = np.where(diff > half, diff - self.world_size, diff)
+                diff = np.where(diff < -half, diff + self.world_size, diff)
+            else:
+                # Simple Euclidean displacement
+                diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+
+            # Compute all pairwise distances: shape (n, n)
+            distances = np.linalg.norm(diff, axis=2)
+            # Maximum pairwise distance (ignoring diagonal self-distances)
+            max_pairwise = np.max(distances)
+
+            # If all agents are within threshold, terminate successfully
+            if max_pairwise < self.break_distance_threshold:
+                terminations = {name: True for name in self.agent_names}
+
         return terminations
 
     def _check_truncations(self) -> Dict[str, bool]:
@@ -467,6 +365,8 @@ class RendezvousEnv(BaseEnv):
             assert self.screen is not None
             self.screen.blit(text_surface, (10, 10))
         pygame.display.flip()
+        # Process pygame events to keep window responsive
+        pygame.event.pump()
         assert self.clock is not None
         self.clock.tick(self.fps)
 
@@ -524,7 +424,7 @@ if __name__ == "__main__":
     """Run a simple random rollout when this module is executed directly.
 
     This example instantiates a rendezvous environment with three agents
-    and executes a single episode using random actions.  The built‑in
+    and executes a single episode using random actions.  The built-in
     `render()` method is used to display the simulation if the
     environment was created with `render_mode="human"`.  The loop
     terminates either when a termination condition occurs or once
@@ -544,7 +444,7 @@ if __name__ == "__main__":
         omega_max=1.0,
     )
     # Reset to obtain the initial observations
-    observations = env.reset()
+    observations, infos = env.reset()
     try:
         # Execute at most `max_steps` steps
         for _ in range(env.max_steps):

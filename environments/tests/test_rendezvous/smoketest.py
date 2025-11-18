@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from rendezvous_env import RendezvousEnv
+from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 
 def main() -> None:
@@ -29,7 +29,7 @@ def main() -> None:
         break_distance_threshold=None,
     )
     # Reset the environment and inspect the initial observation structure
-    observations = env.reset(seed=123)
+    observations, infos = env.reset(seed=123)
     print("Initial observation shapes:")
     for agent, obs in observations.items():
         print(f"  {agent}: {obs.shape}")

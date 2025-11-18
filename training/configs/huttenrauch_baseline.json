@@ -1,0 +1,79 @@
+{
+  "description": "Configuration based on Hüttenrauch et al. (2019) 'Deep Reinforcement Learning for Swarm Systems'",
+  "reference": {
+    "paper": "arXiv:1807.06613, JMLR Vol 20(54), 2019",
+    "github": "https://github.com/ALRhub/deep_rl_for_swarms",
+    "original_algorithm": "TRPO (Trust Region Policy Optimization)",
+    "adapted_to": "PPO (Proximal Policy Optimization)"
+  },
+  "notes": [
+    "Original paper used TRPO with 10M timesteps for 20 agents",
+    "Adapted parameters from TRPO to PPO equivalents",
+    "Uses mean embedding architecture with embed_dim=64",
+    "Agents typically show coordinated behavior around 2-5M timesteps"
+  ],
+
+  "training_config": {
+    "total_timesteps": 10000000,
+    "num_vec_envs": 16,
+    "n_steps": 2048,
+    "batch_size": 512,
+    "n_epochs": 5,
+    "learning_rate": 0.001,
+    "gamma": 0.99,
+    "gae_lambda": 0.98,
+    "clip_range": 0.2,
+    "tensorboard_log": "logs/huttenrauch_baseline"
+  },
+
+  "environment_config": {
+    "num_agents": 20,
+    "max_agents": 500,
+    "world_size": 100.0,
+    "max_steps": 500,
+    "obs_model": "local_basic",
+    "comm_radius": 141.42,
+    "torus": false,
+    "kinematics": "single",
+    "v_max": 2.0,
+    "omega_max": 1.0,
+    "break_distance_threshold": null
+  },
+
+  "network_config": {
+    "embed_dim": 64,
+    "phi_hidden": [64],
+    "policy_net_arch": {"pi": [64, 64], "vf": [64, 64]}
+  },
+
+  "evaluation_config": {
+    "n_episodes": 100,
+    "test_swarm_sizes": [20, 50, 100, 200, 500],
+    "render_mode": null,
+    "deterministic": true
+  },
+
+  "original_trpo_parameters": {
+    "timesteps_per_batch": 2048,
+    "max_timesteps": 10000000,
+    "max_kl": 0.01,
+    "cg_iters": 10,
+    "cg_damping": 0.1,
+    "gamma": 0.99,
+    "lam": 0.98,
+    "vf_iters": 5,
+    "vf_stepsize": 0.001,
+    "num_agents": 20,
+    "world_size": 100,
+    "comm_radius": "100*sqrt(2) ≈ 141.42",
+    "hidden_size": [64],
+    "embedding_size": [64]
+  },
+
+  "convergence_expectations": {
+    "initial_learning": "~2-3M timesteps - agents start showing basic coordination",
+    "partial_convergence": "~5M timesteps - consistent clustering behavior",
+    "full_convergence": "~8-10M timesteps - near-optimal rendezvous performance",
+    "notes": "Original paper trained for 10M timesteps on 20 agents in a 100x100 world"
+  }
+}

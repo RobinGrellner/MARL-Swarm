@@ -168,3 +168,22 @@ cython_debug/
 
 #VSCode
 ./.VSCode
+# Claude Code specific files
+.*CLAUDE.md
+.*README.md
+.claude/
+CLAUDE.md
+CLI_GUIDE.md
+cli.py
+FORMAT.md
+SANITY_CHECK_README.md
+
+# uv specific files
+uv.lock
+
+# TensorBoard logs
+training/tensorboard_logs/
+training/runs/
+
+# Research notes and drafts (personal notes, not for version control)
+research/

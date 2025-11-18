@@ -1,0 +1,704 @@
+{
+  "experiments": {
+    "embed_16_train_4": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 16,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 4,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_16_train_8": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 16,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 8,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_16_train_16": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 16,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 16,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_16_train_32": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 16,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 32,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_32_train_4": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 32,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 4,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_32_train_8": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 32,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 8,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_32_train_16": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 32,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 16,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_32_train_32": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 32,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 32,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_64_train_4": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 4,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_64_train_8": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 8,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_64_train_16": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 16,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_64_train_32": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 64,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 32,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_128_train_4": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 128,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 4,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_128_train_8": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 128,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 8,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_128_train_16": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 128,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 16,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_128_train_32": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 128,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 32,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_256_train_4": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 256,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 4,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_256_train_8": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 256,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 8,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_256_train_16": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 256,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 16,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    },
+    "embed_256_train_32": {
+      "train_config": {
+        "total_timesteps": 2000000,
+        "embed_config": {
+          "embed_dim": 256,
+          "phi_layers": 1
+        },
+        "ppo_params": {
+          "learning_rate": 0.0003
+        },
+        "n_envs": 8,
+        "normalize": true
+      },
+      "env_config": {
+        "num_agents": 32,
+        "world_size": 10.0,
+        "max_steps": 500,
+        "obs_model": "local_basic",
+        "comm_radius": 8.0,
+        "kinematics": "single",
+        "torus": false,
+        "max_agents": 1000,
+        "break_distance_threshold": 1.0
+      },
+      "test_sizes": [
+        4,
+        8,
+        16,
+        32,
+        50,
+        100
+      ],
+      "n_eval_episodes": 100,
+      "force_retrain": false
+    }
+  }
+}

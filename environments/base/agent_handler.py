@@ -50,11 +50,15 @@ class AgentHandler:
             [actions[agent] for agent in self.agents], dtype=np.float32
         )
 
-        # Clip each dimension according to v_max and omega_max
-        clean_actions[:, 0] = np.clip(clean_actions[:, 0], -self.v_max, self.v_max)
-        clean_actions[:, 1] = np.clip(
-            clean_actions[:, 1], -self.omega_max, self.omega_max
-        )
+        # Clip actions based on kinematics mode
+        if self.kinematics == "single":
+            # Single integrator: actions are velocities
+            clean_actions[:, 0] = np.clip(clean_actions[:, 0], -self.v_max, self.v_max)
+            clean_actions[:, 1] = np.clip(clean_actions[:, 1], -self.omega_max, self.omega_max)
+        else:  # double integrator
+            # Double integrator: actions are accelerations
+            clean_actions[:, 0] = np.clip(clean_actions[:, 0], -self.acc_v_max, self.acc_v_max)
+            clean_actions[:, 1] = np.clip(clean_actions[:, 1], -self.acc_omega_max, self.acc_omega_max)
         return clean_actions
 
     def move(self, actions):
