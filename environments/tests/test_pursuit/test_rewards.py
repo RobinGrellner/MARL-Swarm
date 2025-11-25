@@ -34,11 +34,7 @@ class TestPursuitEvasionRewardCalculation:
 
         # Place evader far from all pursuers
         env.evader_pos = np.array([5.0, 5.0], dtype=np.float32)
-        env.agent_handler.positions = np.array([
-            [0.0, 0.0],
-            [10.0, 0.0],
-            [0.0, 10.0]
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array([[0.0, 0.0], [10.0, 0.0], [0.0, 10.0]], dtype=np.float32)
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(3)}
         rewards = env._calculate_rewards(actions)
@@ -49,8 +45,9 @@ class TestPursuitEvasionRewardCalculation:
         # Total ≈ -0.01 + -0.0707 = -0.0807
 
         expected_reward_agent0 = -0.01 + (-0.1 * np.sqrt(50) / 10.0)
-        assert np.isclose(rewards["agent_0"], expected_reward_agent0, atol=1e-5), \
+        assert np.isclose(rewards["agent_0"], expected_reward_agent0, atol=1e-5), (
             f"Expected reward {expected_reward_agent0}, got {rewards['agent_0']}"
+        )
 
     def test_distance_based_reward(self):
         """Test that distance-based rewards are correctly calculated."""
@@ -67,10 +64,13 @@ class TestPursuitEvasionRewardCalculation:
         env.evader_pos = np.array([0.0, 0.0], dtype=np.float32)
 
         # Place pursuers at known distances
-        env.agent_handler.positions = np.array([
-            [3.0, 4.0],    # Distance = 5.0
-            [6.0, 8.0]     # Distance = 10.0
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [3.0, 4.0],  # Distance = 5.0
+                [6.0, 8.0],  # Distance = 10.0
+            ],
+            dtype=np.float32,
+        )
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(2)}
         rewards = env._calculate_rewards(actions)
@@ -96,10 +96,13 @@ class TestPursuitEvasionRewardCalculation:
         env.evader_pos = np.array([0.0, 0.0], dtype=np.float32)
 
         # Place one pursuer within capture radius, one far
-        env.agent_handler.positions = np.array([
-            [0.3, 0.0],    # Distance = 0.3 < capture_radius
-            [5.0, 5.0]     # Distance = sqrt(50) > capture_radius
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [0.3, 0.0],  # Distance = 0.3 < capture_radius
+                [5.0, 5.0],  # Distance = sqrt(50) > capture_radius
+            ],
+            dtype=np.float32,
+        )
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(2)}
         rewards = env._calculate_rewards(actions)
@@ -154,11 +157,14 @@ class TestPursuitEvasionRewardCalculation:
         env.evader_pos = np.array([0.0, 0.0], dtype=np.float32)
 
         # Place pursuers at different distances
-        env.agent_handler.positions = np.array([
-            [1.0, 0.0],    # Distance = 1.0
-            [2.0, 0.0],    # Distance = 2.0
-            [3.0, 0.0]     # Distance = 3.0
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [1.0, 0.0],  # Distance = 1.0
+                [2.0, 0.0],  # Distance = 2.0
+                [3.0, 0.0],  # Distance = 3.0
+            ],
+            dtype=np.float32,
+        )
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(3)}
         rewards = env._calculate_rewards(actions)
@@ -184,10 +190,13 @@ class TestPursuitEvasionTermination:
 
         # Place pursuer within capture radius
         env.evader_pos = np.array([5.0, 5.0], dtype=np.float32)
-        env.agent_handler.positions = np.array([
-            [5.2, 5.0],    # Distance = 0.2 < 0.5
-            [0.0, 0.0]
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [5.2, 5.0],  # Distance = 0.2 < 0.5
+                [0.0, 0.0],
+            ],
+            dtype=np.float32,
+        )
 
         terminations = env._check_terminations()
 
@@ -208,10 +217,13 @@ class TestPursuitEvasionTermination:
 
         # Place all pursuers outside capture radius
         env.evader_pos = np.array([5.0, 5.0], dtype=np.float32)
-        env.agent_handler.positions = np.array([
-            [0.0, 0.0],    # Distance > 0.5
-            [10.0, 10.0]   # Distance > 0.5
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [0.0, 0.0],  # Distance > 0.5
+                [10.0, 10.0],  # Distance > 0.5
+            ],
+            dtype=np.float32,
+        )
 
         terminations = env._check_terminations()
 
@@ -258,10 +270,13 @@ class TestPursuitEvasionRewardNormalization:
 
         # Place pursuer at capture
         env.evader_pos = np.array([0.0, 0.0], dtype=np.float32)
-        env.agent_handler.positions = np.array([
-            [0.1, 0.0],    # Very close, captured
-            [0.1, 0.0]
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [0.1, 0.0],  # Very close, captured
+                [0.1, 0.0],
+            ],
+            dtype=np.float32,
+        )
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(2)}
         rewards = env._calculate_rewards(actions)
@@ -297,8 +312,9 @@ class TestPursuitEvasionRewardNormalization:
             expected_distance_penalty = -0.1 * np.sqrt(2)
             expected_reward = -0.01 + expected_distance_penalty
 
-            assert np.isclose(rewards["agent_0"], expected_reward, atol=1e-3), \
+            assert np.isclose(rewards["agent_0"], expected_reward, atol=1e-3), (
                 f"Distance reward should be normalized (world_size={world_size})"
+            )
 
 
 class TestPursuitEvasionMultiplePursuers:
@@ -344,13 +360,16 @@ class TestPursuitEvasionMultiplePursuers:
         env.evader_pos = np.array([5.0, 5.0], dtype=np.float32)
 
         # Only one pursuer close enough
-        env.agent_handler.positions = np.array([
-            [0.0, 0.0],     # Far
-            [10.0, 10.0],   # Far
-            [5.2, 5.0],     # Close! Distance = 0.2 < 0.5
-            [0.0, 10.0],    # Far
-            [10.0, 0.0]     # Far
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [0.0, 0.0],  # Far
+                [10.0, 10.0],  # Far
+                [5.2, 5.0],  # Close! Distance = 0.2 < 0.5
+                [0.0, 10.0],  # Far
+                [10.0, 0.0],  # Far
+            ],
+            dtype=np.float32,
+        )
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(5)}
         rewards = env._calculate_rewards(actions)
@@ -399,11 +418,10 @@ class TestPursuitEvasionEdgeCases:
         # Place evader at center, pursuers in circle around it
         env.evader_pos = np.array([5.0, 5.0], dtype=np.float32)
         radius = 2.0
-        angles = [0, np.pi/2, np.pi, 3*np.pi/2]
-        env.agent_handler.positions = np.array([
-            [5.0 + radius * np.cos(angle), 5.0 + radius * np.sin(angle)]
-            for angle in angles
-        ], dtype=np.float32)
+        angles = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
+        env.agent_handler.positions = np.array(
+            [[5.0 + radius * np.cos(angle), 5.0 + radius * np.sin(angle)] for angle in angles], dtype=np.float32
+        )
 
         actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(4)}
         rewards = env._calculate_rewards(actions)
@@ -411,8 +429,9 @@ class TestPursuitEvasionEdgeCases:
         # All rewards should be equal (all equidistant)
         reward_values = list(rewards.values())
         for i in range(1, len(reward_values)):
-            assert np.isclose(reward_values[i], reward_values[0], atol=1e-5), \
+            assert np.isclose(reward_values[i], reward_values[0], atol=1e-5), (
                 "All equidistant pursuers should have same reward"
+            )
 
     def test_zero_capture_radius(self):
         """Test with very small capture radius (difficult capture)."""

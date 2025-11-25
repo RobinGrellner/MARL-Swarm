@@ -92,9 +92,7 @@ class VoronoiEvasionAgent:
         """
         # Sample candidate directions (8 cardinal + intercardinal directions)
         angles = np.linspace(0, 2 * np.pi, 8, endpoint=False)
-        candidate_directions = np.array([
-            [np.cos(angle), np.sin(angle)] for angle in angles
-        ])
+        candidate_directions = np.array([[np.cos(angle), np.sin(angle)] for angle in angles])
 
         best_direction = None
         best_min_distance = -np.inf
@@ -145,7 +143,7 @@ class VoronoiEvasionAgent:
         distances = np.maximum(distances, 1e-6)
 
         # Weight by inverse distance squared (closer pursuers matter more)
-        weights = 1.0 / (distances ** 2)
+        weights = 1.0 / (distances**2)
         weights = weights / np.sum(weights)  # Normalize
 
         # Weighted sum of escape directions
@@ -180,12 +178,7 @@ class VoronoiEvasionAgent:
 
         try:
             # Add corner points to bound the Voronoi diagram
-            corners = np.array([
-                [0, 0],
-                [0, self.world_size],
-                [self.world_size, 0],
-                [self.world_size, self.world_size]
-            ])
+            corners = np.array([[0, 0], [0, self.world_size], [self.world_size, 0], [self.world_size, self.world_size]])
             points = np.vstack([pursuer_positions, corners])
 
             # Compute Voronoi diagram
@@ -206,8 +199,7 @@ class VoronoiEvasionAgent:
 
             for vertex in vertices:
                 # Skip vertices outside the world
-                if (vertex[0] < 0 or vertex[0] > self.world_size or
-                    vertex[1] < 0 or vertex[1] > self.world_size):
+                if vertex[0] < 0 or vertex[0] > self.world_size or vertex[1] < 0 or vertex[1] > self.world_size:
                     continue
 
                 # Compute minimum distance from this vertex to any pursuer

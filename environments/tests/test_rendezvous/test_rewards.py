@@ -67,8 +67,7 @@ class TestRendezvousRewardCalculation:
 
         expected_reward = -0.5
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), \
-                f"Expected reward {expected_reward}, got {reward}"
+            assert np.isclose(reward, expected_reward, atol=1e-5), f"Expected reward {expected_reward}, got {reward}"
 
     def test_reward_distance_clipping(self):
         """Test that distances are clipped to d_c."""
@@ -92,8 +91,7 @@ class TestRendezvousRewardCalculation:
 
         expected_reward = -1.0
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), \
-                f"Distance should be clipped to d_c"
+            assert np.isclose(reward, expected_reward, atol=1e-5), f"Distance should be clipped to d_c"
 
     def test_action_penalty(self):
         """Test that action penalty is correctly applied."""
@@ -121,8 +119,9 @@ class TestRendezvousRewardCalculation:
 
         expected_reward = -0.0015
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-6), \
+            assert np.isclose(reward, expected_reward, atol=1e-6), (
                 f"Expected action penalty {expected_reward}, got {reward}"
+            )
 
     def test_combined_reward(self):
         """Test combined distance and action rewards."""
@@ -151,8 +150,9 @@ class TestRendezvousRewardCalculation:
 
         expected_reward = -0.5015
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-6), \
+            assert np.isclose(reward, expected_reward, atol=1e-6), (
                 f"Expected combined reward {expected_reward}, got {reward}"
+            )
 
     def test_reward_shared_among_all_agents(self):
         """Test that all agents receive the same reward (global reward)."""
@@ -172,8 +172,7 @@ class TestRendezvousRewardCalculation:
         # All rewards should be identical (global reward)
         reward_values = list(rewards.values())
         for i in range(1, len(reward_values)):
-            assert reward_values[i] == reward_values[0], \
-                "All agents should receive the same global reward"
+            assert reward_values[i] == reward_values[0], "All agents should receive the same global reward"
 
 
 class TestRendezvousRewardWithTorus:
@@ -205,8 +204,7 @@ class TestRendezvousRewardWithTorus:
 
         expected_reward = -0.1
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), \
-                f"Torus wrapping should give shortest distance"
+            assert np.isclose(reward, expected_reward, atol=1e-5), f"Torus wrapping should give shortest distance"
 
     def test_torus_wrapping_diagonal(self):
         """Test torus wrapping with diagonal distances."""
@@ -231,8 +229,7 @@ class TestRendezvousRewardWithTorus:
         # reward = -0.1 * sqrt(2)
         expected_reward = -0.1 * np.sqrt(2)
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), \
-                f"Torus wrapping should handle diagonal distances"
+            assert np.isclose(reward, expected_reward, atol=1e-5), f"Torus wrapping should handle diagonal distances"
 
 
 class TestRendezvousRewardNormalization:
@@ -268,11 +265,7 @@ class TestRendezvousRewardNormalization:
 
         # Place agents at maximum distance (all pairwise distances = d_c)
         # This gives sum of clipped distances = n*(n-1)/2 * d_c
-        env.agent_handler.positions = np.array([
-            [0.0, 0.0],
-            [10.0, 0.0],
-            [0.0, 10.0]
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array([[0.0, 0.0], [10.0, 0.0], [0.0, 10.0]], dtype=np.float32)
 
         # All pairwise distances are >= d_c (10.0)
         # Sum of clipped = 3 * 10.0 = 30.0
@@ -284,8 +277,7 @@ class TestRendezvousRewardNormalization:
 
         expected_reward = -1.0
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), \
-                f"Worst case reward should be approximately -1.0"
+            assert np.isclose(reward, expected_reward, atol=1e-5), f"Worst case reward should be approximately -1.0"
 
     def test_reward_scale_invariant_to_world_size(self):
         """Test that reward normalization makes it scale-invariant."""
@@ -302,20 +294,18 @@ class TestRendezvousRewardNormalization:
             env.reset(seed=42)
 
             # Place agents at maximum distances (scaled to world_size)
-            env.agent_handler.positions = np.array([
-                [0.0, 0.0],
-                [world_size, 0.0],
-                [0.0, world_size],
-                [world_size, world_size]
-            ], dtype=np.float32)
+            env.agent_handler.positions = np.array(
+                [[0.0, 0.0], [world_size, 0.0], [0.0, world_size], [world_size, world_size]], dtype=np.float32
+            )
 
             actions = {f"agent_{i}": np.array([0.0, 0.0], dtype=np.float32) for i in range(num_agents)}
             rewards = env._calculate_rewards(actions)
 
             # Should be approximately -1.0 regardless of world_size
             for reward in rewards.values():
-                assert np.isclose(reward, -1.0, atol=0.1), \
+                assert np.isclose(reward, -1.0, atol=0.1), (
                     f"Reward normalization should be scale-invariant (world_size={world_size})"
+                )
 
 
 class TestRendezvousRewardMultipleAgents:

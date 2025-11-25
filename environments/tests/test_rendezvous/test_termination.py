@@ -48,11 +48,14 @@ class TestRendezvousTermination:
         env.reset(seed=42)
 
         # Place agents very close together (all distances < 0.5)
-        env.agent_handler.positions = np.array([
-            [5.0, 5.0],
-            [5.1, 5.0],    # Distance from first: 0.1
-            [5.0, 5.1]     # Distance from first: 0.1, from second: sqrt(0.1^2 + 0.1^2) ≈ 0.14
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [5.0, 5.0],
+                [5.1, 5.0],  # Distance from first: 0.1
+                [5.0, 5.1],  # Distance from first: 0.1, from second: sqrt(0.1^2 + 0.1^2) ≈ 0.14
+            ],
+            dtype=np.float32,
+        )
 
         terminations = env._check_terminations()
 
@@ -72,11 +75,14 @@ class TestRendezvousTermination:
         env.reset(seed=42)
 
         # Two agents close, one far
-        env.agent_handler.positions = np.array([
-            [5.0, 5.0],
-            [5.1, 5.0],    # Close to first
-            [8.0, 8.0]     # Far from both
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [5.0, 5.0],
+                [5.1, 5.0],  # Close to first
+                [8.0, 8.0],  # Far from both
+            ],
+            dtype=np.float32,
+        )
 
         terminations = env._check_terminations()
 
@@ -149,12 +155,15 @@ class TestRendezvousTermination:
         env.reset(seed=42)
 
         # Place all agents in a small cluster that wraps around edges
-        env.agent_handler.positions = np.array([
-            [0.2, 0.2],
-            [9.9, 0.2],    # Wrapped distance from first ≈ 0.3
-            [0.2, 9.9],    # Wrapped distance from first ≈ 0.3
-            [9.9, 9.9]     # Wrapped distance from first ≈ 0.42
-        ], dtype=np.float32)
+        env.agent_handler.positions = np.array(
+            [
+                [0.2, 0.2],
+                [9.9, 0.2],  # Wrapped distance from first ≈ 0.3
+                [0.2, 9.9],  # Wrapped distance from first ≈ 0.3
+                [9.9, 9.9],  # Wrapped distance from first ≈ 0.42
+            ],
+            dtype=np.float32,
+        )
 
         terminations = env._check_terminations()
 
@@ -334,8 +343,9 @@ class TestTorusWrapMovement:
 
         # Position should wrap to near left edge
         expected_x = (9.5 + 1.0) % 10.0  # 0.5
-        assert np.isclose(env.agent_handler.positions[0, 0], expected_x, atol=1e-5), \
+        assert np.isclose(env.agent_handler.positions[0, 0], expected_x, atol=1e-5), (
             "Position should wrap around x-axis in torus mode"
+        )
 
     def test_position_wrapping_y_axis(self):
         """Test that positions wrap correctly on y-axis."""
@@ -359,8 +369,9 @@ class TestTorusWrapMovement:
 
         # Position should wrap to near bottom edge
         expected_y = (9.5 + 1.0) % 10.0  # 0.5
-        assert np.isclose(env.agent_handler.positions[0, 1], expected_y, atol=1e-5), \
+        assert np.isclose(env.agent_handler.positions[0, 1], expected_y, atol=1e-5), (
             "Position should wrap around y-axis in torus mode"
+        )
 
     def test_no_wrapping_without_torus(self):
         """Test that positions don't wrap when torus=False."""
@@ -384,8 +395,9 @@ class TestTorusWrapMovement:
 
         # Position should go past boundary (no wrapping)
         expected_x = 9.5 + 1.0  # 10.5 (outside world)
-        assert np.isclose(env.agent_handler.positions[0, 0], expected_x, atol=1e-5), \
+        assert np.isclose(env.agent_handler.positions[0, 0], expected_x, atol=1e-5), (
             "Position should not wrap when torus=False"
+        )
 
 
 if __name__ == "__main__":
