@@ -25,27 +25,18 @@ from environments.rendezvous.rendezvous_env import RendezvousEnv
 from evaluation.plotting import create_scalability_report, plot_comparison
 from evaluation.utils import (
     evaluate_on_multiple_sizes,
-    load_model_with_normalization,
+    load_model,
     print_scalability_summary,
 )
 from training.rendezvous_train_utils import run_training_rendezvous
 
 
 def check_model_exists(model_path: Path) -> bool:
-    """Check if a trained model and its VecNormalize stats exist."""
+    """Check if a trained model exists."""
     model_path = Path(model_path)
-    vecnorm_path = Path(str(model_path).replace(".zip", "_vecnormalize.pkl"))
 
-    model_exists = model_path.exists()
-    vecnorm_exists = vecnorm_path.exists()
-
-    if model_exists and vecnorm_exists:
+    if model_path.exists():
         print(f"✓ Model found: {model_path}")
-        print(f"✓ VecNormalize found: {vecnorm_path}")
-        return True
-    elif model_exists and not vecnorm_exists:
-        print(f"⚠ Model found but VecNormalize missing: {model_path}")
-        print("  → Consider retraining to get VecNormalize stats")
         return True
     else:
         print(f"✗ Model not found: {model_path}")
@@ -172,7 +163,7 @@ def run_experiment(
     print("LOADING MODEL FOR EVALUATION")
     print(f"{'=' * 60}")
 
-    model, vecnormalize_path = load_model_with_normalization(model_path, verbose=True)
+    model = load_model(model_path, verbose=True)
 
     # Step 3: Evaluate on multiple swarm sizes
     print(f"\n{'=' * 60}")
@@ -181,7 +172,6 @@ def run_experiment(
     print(f"Test sizes: {test_sizes}")
     print(f"Episodes per size: {n_eval_episodes}")
 
-    # Create eval env config (remove num_agents since it's specified per test)
     eval_env_config = env_config.copy()
     eval_env_config.pop("num_agents", None)
 
@@ -189,7 +179,6 @@ def run_experiment(
         model=model,
         test_sizes=test_sizes,
         env_config=eval_env_config,
-        vecnormalize_path=vecnormalize_path,
         n_episodes=n_eval_episodes,
         deterministic=True,
         verbose=True,
@@ -281,9 +270,7 @@ def run_multiple_experiments(experiments: Dict[str, Dict]) -> Dict[str, Dict[int
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Run scalability experiments for multi-agent RL"
-    )
+    parser = argparse.ArgumentParser(description="Run scalability experiments for multi-agent RL")
 
     # Experiment selection
     parser.add_argument(
@@ -302,7 +289,9 @@ def main():
     # Training configuration
     parser.add_argument("--train-size", type=int, default=20, help="Number of agents to train on")
     parser.add_argument("--total-timesteps", type=int, default=15_000_000, help="Total training timesteps")
-    parser.add_argument("--n-envs", type=int, default=None, help="Number of parallel environments (overrides config file)")
+    parser.add_argument(
+        "--n-envs", type=int, default=None, help="Number of parallel environments (overrides config file)"
+    )
     parser.add_argument("--force-retrain", action="store_true", help="Force retraining even if model exists")
 
     # Evaluation configuration
@@ -328,7 +317,9 @@ def main():
     parser.add_argument("--comm-radius", type=float, default=70.0, help="Communication radius")
     parser.add_argument("--kinematics", type=str, default="single", choices=["single", "double"])
     parser.add_argument("--max-agents", type=int, default=250, help="Max agents for scale-invariant observations")
-    parser.add_argument("--break-distance-threshold", type=float, default=0.1, help="Distance threshold for successful rendezvous")
+    parser.add_argument(
+        "--break-distance-threshold", type=float, default=0.1, help="Distance threshold for successful rendezvous"
+    )
 
     # Output
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory for results")
@@ -371,7 +362,9 @@ def main():
             )
     else:
         # Run single experiment from command line args
-        experiment_name = args.experiment_name or f"exp_train{args.train_size}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        experiment_name = (
+            args.experiment_name or f"exp_train{args.train_size}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
 
         env_config = {
             "num_agents": args.train_size,

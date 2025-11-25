@@ -19,4 +19,3 @@ OBSERVATION_MODELS = [
     "global_extended",
     "classic",
 ]
-

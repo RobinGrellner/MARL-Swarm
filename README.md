@@ -1,5 +1,17 @@
 # MARL-Swarm
 
+## Key-Commands:
+### Training:
+#### TRPO
+uv run python training/train_rendezvous.py --algorithm trpo --num-agents 20 --max-agents 100 --world-size 100 --comm-radius 75.0 --obs-model local_basic --total-timesteps 5000000 --num-vec-envs 8 --model-path models/huttenrauch
+_trpo_20_agents_scalable.zip --tensorboard-log logs/trpo/huttenrauch_scalable --use-cuda --n-steps 256 --batch-size 128
+
+#### PPO
+
+### Evaluation:
+
+
+
 **Multi-Agent Reinforcement Learning for Swarm Robotics Research**
 
 This repository is part of my Master's thesis, implementing PettingZoo-compatible environments for training coordinated swarm behaviors using Multi-Agent Reinforcement Learning (MARL) with PPO and parameter sharing.
@@ -20,6 +32,58 @@ MARL-Swarm provides a framework for training point-agent swarms with single- and
 - **TensorBoard integration** for training visualization
 - **Modular training utilities** for experiment reproducibility
 - **Comprehensive testing suite** with pytest and benchmarks
+
+## Quick Reference
+
+### Main Training Command (TRPO - Hüttenrauch Parameters)
+
+Train with TRPO algorithm using the parameters from the reference paper:
+
+```bash
+uv run python training/train_rendezvous.py \
+  --algorithm trpo \
+  --num-agents 10 \
+  --world-size 100.0 \
+  --comm-radius 75.0 \
+  --obs-model local_basic \
+  --total-timesteps 5000000 \
+  --num-vec-envs 8 \
+  --model-path models/huttenrauch_trpo.zip \
+  --tensorboard-log training/tensorboard_logs
+```
+
+**TRPO Parameters (matching Hüttenrauch et al. 2019):**
+- `n_steps=2048` (timesteps per batch)
+- `target_kl=0.01` (max KL divergence)
+- `learning_rate=1e-3` (value function learning rate)
+- `cg_max_steps=10` (conjugate gradient iterations)
+- `cg_damping=0.1` (damping coefficient)
+- `gamma=0.99`, `gae_lambda=0.98`
+- `n_critic_updates=5` (value function updates per policy update)
+
+### Visual Evaluation Command
+
+Evaluate a trained model with real-time visualization:
+
+```bash
+uv run python training/evaluate_rendezvous.py \
+  --model-path models/huttenrauch_trpo.zip \
+  --num-agents 10 \
+  --world-size 100.0 \
+  --comm-radius 75.0 \
+  --obs-model local_basic \
+  --render-mode human \
+  --n-episodes 10
+```
+
+### Monitor Training Progress
+
+Start TensorBoard to view training metrics in real-time:
+
+```bash
+tensorboard --logdir training/tensorboard_logs
+# Open http://localhost:6006 in your browser
+```
 
 ## Setup
 

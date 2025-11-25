@@ -153,12 +153,7 @@ class PursuitEvasionEnv(BaseEnv):
 
         Observation: [local_features] + [pursuer_neighbor_features] + [evader_features] + [mask]
         """
-        obs_space = spaces.Box(
-            low=-np.inf,
-            high=np.inf,
-            shape=(self.obs_layout["total_dim"],),
-            dtype=np.float32
-        )
+        obs_space = spaces.Box(low=-np.inf, high=np.inf, shape=(self.obs_layout["total_dim"],), dtype=np.float32)
         return {agent: obs_space for agent in self.agent_handler.agents}
 
     def _reset_agents(self, seed: Optional[int] = None) -> None:
@@ -170,9 +165,7 @@ class PursuitEvasionEnv(BaseEnv):
         self.agent_handler.initialize_random_positions(self.world_size)
 
         # Reset evader to random position
-        self.evader_pos = np.random.uniform(
-            0, self.world_size, size=2
-        ).astype(np.float32)
+        self.evader_pos = np.random.uniform(0, self.world_size, size=2).astype(np.float32)
 
         # Reset evader velocity and orientation
         self.evader_vel = 0.0
@@ -203,7 +196,7 @@ class PursuitEvasionEnv(BaseEnv):
 
         # Select top max_neighbours (excluding self at index 0)
         actual_neighbors = min(num_agents - 1, self._max_neighbours)
-        neighbor_indices_available = sorted_indices[:, 1:actual_neighbors+1]  # (N, actual_neighbors)
+        neighbor_indices_available = sorted_indices[:, 1 : actual_neighbors + 1]  # (N, actual_neighbors)
 
         # Pad to max_neighbours
         padding = np.zeros((num_agents, self._max_neighbours - actual_neighbors), dtype=int)
@@ -227,9 +220,9 @@ class PursuitEvasionEnv(BaseEnv):
             # Relative velocities (scalar magnitude)
             neighbor_vels = linear_vels[neighbor_indices] - linear_vels[:, np.newaxis]
 
-            neighbor_features = np.stack([
-                neighbor_dists, neighbor_bears, neighbor_oris, neighbor_vels
-            ], axis=2)  # (N, max_neighbours, 4)
+            neighbor_features = np.stack(
+                [neighbor_dists, neighbor_bears, neighbor_oris, neighbor_vels], axis=2
+            )  # (N, max_neighbours, 4)
 
         elif self.obs_model == "local_extended":
             # Relative orientations only
@@ -237,9 +230,9 @@ class PursuitEvasionEnv(BaseEnv):
             orientations_matrix = (orientations_matrix + np.pi) % (2 * np.pi) - np.pi
             neighbor_oris = orientations_matrix[row_indices, neighbor_indices]
 
-            neighbor_features = np.stack([
-                neighbor_dists, neighbor_bears, neighbor_oris
-            ], axis=2)  # (N, max_neighbours, 3)
+            neighbor_features = np.stack(
+                [neighbor_dists, neighbor_bears, neighbor_oris], axis=2
+            )  # (N, max_neighbours, 3)
 
         # Apply communication radius mask for local models
         if self.obs_model.startswith("local"):
@@ -292,9 +285,7 @@ class PursuitEvasionEnv(BaseEnv):
         rewards = {}
 
         # Calculate minimum distance to evader
-        distances = np.linalg.norm(
-            self.agent_handler.positions - self.evader_pos, axis=1
-        )
+        distances = np.linalg.norm(self.agent_handler.positions - self.evader_pos, axis=1)
         min_dist = np.min(distances)
 
         # Check if captured
@@ -317,9 +308,7 @@ class PursuitEvasionEnv(BaseEnv):
 
     def _check_terminations(self) -> Dict[str, bool]:
         """Check if episode should terminate (evader captured)."""
-        distances = np.linalg.norm(
-            self.agent_handler.positions - self.evader_pos, axis=1
-        )
+        distances = np.linalg.norm(self.agent_handler.positions - self.evader_pos, axis=1)
         captured = np.any(distances < self.capture_radius)
 
         return {agent: captured for agent in self.agents}
@@ -332,9 +321,7 @@ class PursuitEvasionEnv(BaseEnv):
     def _get_infos(self) -> Dict[str, dict]:
         """Return additional information for each agent."""
         # Calculate distances to evader
-        distances = np.linalg.norm(
-            self.agent_handler.positions - self.evader_pos, axis=1
-        )
+        distances = np.linalg.norm(self.agent_handler.positions - self.evader_pos, axis=1)
         min_dist = np.min(distances)
 
         infos = {}
@@ -362,9 +349,7 @@ class PursuitEvasionEnv(BaseEnv):
         Current policy: Move away from nearest pursuer.
         """
         # Find nearest pursuer
-        distances = np.linalg.norm(
-            self.agent_handler.positions - self.evader_pos, axis=1
-        )
+        distances = np.linalg.norm(self.agent_handler.positions - self.evader_pos, axis=1)
         nearest_idx = np.argmin(distances)
         nearest_pos = self.agent_handler.positions[nearest_idx]
 
@@ -384,12 +369,7 @@ class PursuitEvasionEnv(BaseEnv):
 
     def _calc_dist_to_closest_wall(self, pos: np.ndarray) -> float:
         """Calculate distance to closest wall."""
-        return np.min([
-            pos[0],
-            pos[1],
-            self.world_size - pos[0],
-            self.world_size - pos[1]
-        ])
+        return np.min([pos[0], pos[1], self.world_size - pos[0], self.world_size - pos[1]])
 
     def _bearing_to_closest_wall(self, pos: np.ndarray, orientation: float) -> float:
         """Calculate bearing to closest wall using proper vector math.
@@ -483,13 +463,12 @@ class PursuitEvasionEnv(BaseEnv):
 
         elif self.render_mode == "rgb_array":
             # Return RGB array for video recording
-            return np.transpose(
-                np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
-            )
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2))
 
     def _close(self) -> None:
         """Clean up resources."""
         if self.screen is not None:
             import pygame
+
             pygame.quit()
             self.screen = None

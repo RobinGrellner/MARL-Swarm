@@ -99,9 +99,7 @@ class BaseEnv(ABC, ParallelEnv):
         """Return the action space for a single agent."""
         return self._action_space[agent]
 
-    def reset(
-        self, seed: Optional[int] = None, options: Optional[dict] = None
-    ) -> Dict[str, np.ndarray]:
+    def reset(self, seed: Optional[int] = None, options: Optional[dict] = None) -> Dict[str, np.ndarray]:
         """Template Method to reset the environment state.
         - Sample positions for agents
         - Velocities are set to zero
@@ -120,9 +118,7 @@ class BaseEnv(ABC, ParallelEnv):
 
     def step(
         self, actions: Dict[str, np.ndarray]
-    ) -> Tuple[
-        Dict[str, np.ndarray], Dict[str, float], Dict[str, bool], Dict[str, dict]
-    ]:
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, float], Dict[str, bool], Dict[str, dict]]:
         """Template method for advancing the simulation by one timestep.
 
         Parameters
@@ -166,13 +162,9 @@ class BaseEnv(ABC, ParallelEnv):
         self.agent_handler.move(actions)
 
         if self.torus:
-            self.agent_handler.positions = (
-                self.agent_handler.positions % self.world_size
-            )
+            self.agent_handler.positions = self.agent_handler.positions % self.world_size
         else:
-            self.agent_handler.positions = np.clip(
-                self.agent_handler.positions, 0.0, self.world_size
-            )
+            self.agent_handler.positions = np.clip(self.agent_handler.positions, 0.0, self.world_size)
 
     def _setup_spaces(self):
         """Setup of shared action and observation spaces"""
@@ -196,8 +188,7 @@ class BaseEnv(ABC, ParallelEnv):
             )
 
         self._action_space: Dict[str, spaces.Box] = {
-            agent: spaces.Box(low=low, high=high, shape=(2,), dtype=np.float32)
-            for agent in self.agent_handler.agents
+            agent: spaces.Box(low=low, high=high, shape=(2,), dtype=np.float32) for agent in self.agent_handler.agents
         }
 
         self._observation_space = self._get_observation_space()

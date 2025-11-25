@@ -1,4 +1,5 @@
-#TODO
+# TODO
 
-class PursuitEnv():
+
+class PursuitEnv:
     pass

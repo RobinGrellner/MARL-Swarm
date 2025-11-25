@@ -55,7 +55,7 @@ class MeanEmbeddingExtractor(BaseFeaturesExtractor):
             self.phi = nn.Sequential(*layers)
         else:
             self.phi = None
-                
+
         # Offsets:
         self._agent_obs_dim = self.local_dim + self.max_neigh * self.neigh_dim + self.max_neigh
         self._neigh_block_len = self.max_neigh * self.neigh_dim

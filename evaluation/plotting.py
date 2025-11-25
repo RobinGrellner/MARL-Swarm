@@ -59,7 +59,7 @@ def plot_scalability_curve(
             swarm_sizes,
             means,
             yerr=stds,
-            marker='o',
+            marker="o",
             markersize=8,
             linewidth=2,
             capsize=5,
@@ -70,17 +70,17 @@ def plot_scalability_curve(
         ax.plot(
             swarm_sizes,
             means,
-            marker='o',
+            marker="o",
             markersize=8,
             linewidth=2,
             label=metric.replace("_", " ").title(),
         )
 
     # Formatting
-    ax.set_xlabel("Number of Agents", fontsize=12, fontweight='bold')
-    ax.set_ylabel(ylabel or metric.replace("_", " ").title(), fontsize=12, fontweight='bold')
-    ax.set_title(title or f"{metric.replace('_', ' ').title()} vs Swarm Size", fontsize=14, fontweight='bold')
-    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.set_xlabel("Number of Agents", fontsize=12, fontweight="bold")
+    ax.set_ylabel(ylabel or metric.replace("_", " ").title(), fontsize=12, fontweight="bold")
+    ax.set_title(title or f"{metric.replace('_', ' ').title()} vs Swarm Size", fontsize=14, fontweight="bold")
+    ax.grid(True, alpha=0.3, linestyle="--")
     ax.legend(fontsize=10)
 
     # Set x-axis to show all swarm sizes
@@ -92,7 +92,7 @@ def plot_scalability_curve(
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(save_path, dpi=300, bbox_inches='tight')
+        fig.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     # Show if requested
@@ -147,28 +147,28 @@ def plot_multiple_metrics(
                 swarm_sizes,
                 means,
                 yerr=stds,
-                marker='o',
+                marker="o",
                 markersize=6,
                 linewidth=2,
                 capsize=4,
                 capthick=1.5,
             )
         else:
-            ax.plot(swarm_sizes, means, marker='o', markersize=6, linewidth=2)
+            ax.plot(swarm_sizes, means, marker="o", markersize=6, linewidth=2)
 
         # Formatting
         ax.set_xlabel("Number of Agents", fontsize=10)
         ax.set_ylabel(metric.replace("_", " ").title(), fontsize=10)
         if titles and idx < len(titles):
-            ax.set_title(titles[idx], fontsize=11, fontweight='bold')
+            ax.set_title(titles[idx], fontsize=11, fontweight="bold")
         else:
-            ax.set_title(metric.replace("_", " ").title(), fontsize=11, fontweight='bold')
-        ax.grid(True, alpha=0.3, linestyle='--')
+            ax.set_title(metric.replace("_", " ").title(), fontsize=11, fontweight="bold")
+        ax.grid(True, alpha=0.3, linestyle="--")
         ax.set_xticks(swarm_sizes)
 
     # Hide unused subplots
     for idx in range(n_metrics, len(axes)):
-        axes[idx].axis('off')
+        axes[idx].axis("off")
 
     plt.tight_layout()
 
@@ -176,7 +176,7 @@ def plot_multiple_metrics(
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(save_path, dpi=300, bbox_inches='tight')
+        fig.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     # Show if requested
@@ -223,7 +223,7 @@ def plot_comparison(
                 swarm_sizes,
                 means,
                 yerr=stds,
-                marker='o',
+                marker="o",
                 markersize=7,
                 linewidth=2,
                 capsize=4,
@@ -234,18 +234,18 @@ def plot_comparison(
             ax.plot(
                 swarm_sizes,
                 means,
-                marker='o',
+                marker="o",
                 markersize=7,
                 linewidth=2,
                 label=exp_name,
             )
 
     # Formatting
-    ax.set_xlabel("Number of Agents", fontsize=12, fontweight='bold')
-    ax.set_ylabel(ylabel or metric.replace("_", " ").title(), fontsize=12, fontweight='bold')
-    ax.set_title(title or f"Comparison: {metric.replace('_', ' ').title()}", fontsize=14, fontweight='bold')
-    ax.grid(True, alpha=0.3, linestyle='--')
-    ax.legend(fontsize=10, loc='best')
+    ax.set_xlabel("Number of Agents", fontsize=12, fontweight="bold")
+    ax.set_ylabel(ylabel or metric.replace("_", " ").title(), fontsize=12, fontweight="bold")
+    ax.set_title(title or f"Comparison: {metric.replace('_', ' ').title()}", fontsize=14, fontweight="bold")
+    ax.grid(True, alpha=0.3, linestyle="--")
+    ax.legend(fontsize=10, loc="best")
 
     plt.tight_layout()
 
@@ -253,7 +253,7 @@ def plot_comparison(
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(save_path, dpi=300, bbox_inches='tight')
+        fig.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
     # Show if requested

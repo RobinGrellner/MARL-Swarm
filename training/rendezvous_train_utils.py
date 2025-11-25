@@ -1,28 +1,28 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import warnings
-
-import numpy as np
 
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 
-from gymnasium import spaces
 from supersuit import flatten_v0 as supersuit_flatten
 from supersuit import pettingzoo_env_to_vec_env_v1, concat_vec_envs_v1
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecMonitor, VecNormalize
-from policies.meanEmbeddingExtractor import MeanEmbeddingExtractor
+from stable_baselines3.common.vec_env import VecMonitor
+from stable_baselines3.common.base_class import BaseAlgorithm
+from sb3_contrib import TRPO
+from policies.mean_embedding_extractor import MeanEmbeddingExtractor
 
 import torch
-import torch.nn as nn
 
 # Suppress render_mode warning from VecEnv
 warnings.filterwarnings("ignore", message=".*render_mode.*", category=UserWarning)
 
-def wrap_env_for_sb3(env: RendezvousEnv, *, n_envs: int = 1, monitor_keywords: Optional[Tuple[str, ...]] = None, normalize: bool = True) -> VecMonitor:
+
+def wrap_env_for_sb3(
+    env: RendezvousEnv, *, n_envs: int = 1, monitor_keywords: Optional[Tuple[str, ...]] = None, normalize: bool = True
+) -> VecMonitor:
     """Wrap a PettingZoo environment for Stable-Baselines3 training.
 
     The wrapping sequence is as follows:
@@ -31,7 +31,6 @@ def wrap_env_for_sb3(env: RendezvousEnv, *, n_envs: int = 1, monitor_keywords: O
     2. Convert the flattened PettingZoo env into a vectorised environment with pettingzoo_env_to_vec_env_v1.
     3. Concatenate n_envs copies of the vector environment into a single SB3 VecEnv with concat_vec_envs_v1.
     4. Apply a VecMonitor to record episode statistics and optionally monitor additional keys from the environment's info.
-    5. Optionally normalise observations and rewards via VecNormalize.
 
     :param env: the PettingZoo environment to wrap
     :param n_envs: number of vectorised copies (for parallel workers)
@@ -50,13 +49,12 @@ def wrap_env_for_sb3(env: RendezvousEnv, *, n_envs: int = 1, monitor_keywords: O
         vec_env = VecMonitor(vec_env, info_keywords=monitor_keywords)
     else:
         vec_env = VecMonitor(vec_env)
-    # Optionally apply normalisation
-    if normalize:
-        vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True, clip_obs=10.0)
+
+    # VecNormalize removed: breaks binary masks and rewards already normalized by design
     return vec_env
 
 
-#TODO ab hier nachprüfen
+# TODO ab hier nachprüfen
 def make_policy_kwargs(layout: Dict[str, int], *, embed_dim: int = 64, phi_layers: int = 1) -> Dict[str, Any]:
     local_dim = layout["local_dim"]
     neigh_dim = layout["neigh_dim"]
@@ -76,97 +74,145 @@ def make_policy_kwargs(layout: Dict[str, int], *, embed_dim: int = 64, phi_layer
     }
 
 
-def setup_ppo_model(vec_env: VecMonitor, policy_kwargs: Dict[str, Any], ppo_params: Dict[str, Any]) -> PPO:
-    # Force GPU usage if available (unless explicitly set in ppo_params)
-    ppo_params = ppo_params.copy()  # Don't modify original dict
+def setup_model(
+    vec_env: VecMonitor, policy_kwargs: Dict[str, Any], algo_params: Dict[str, Any], algorithm: str = "ppo"
+) -> BaseAlgorithm:
+    """Setup RL model (PPO or TRPO) with given parameters.
 
-    if "device" not in ppo_params:
+    Args:
+        vec_env: Vectorized environment
+        policy_kwargs: Policy network configuration
+        algo_params: Algorithm hyperparameters
+        algorithm: "ppo" or "trpo"
+
+    Returns:
+        Configured RL model
+    """
+    algo_params = algo_params.copy()  # Don't modify original dict
+
+    # Set device if not already provided
+    if "device" not in algo_params:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        ppo_params["device"] = device
-        print(f"\n{'='*60}")
-        print(f"CUDA Available: {torch.cuda.is_available()}")
-        if torch.cuda.is_available():
-            print(f"CUDA Device: {torch.cuda.get_device_name(0)}")
-        print(f"Selected Device: {device}")
-        print(f"{'='*60}\n")
+        algo_params["device"] = device
+    else:
+        device = algo_params["device"]
 
-    return PPO(
-        policy="MlpPolicy",
-        env=vec_env,
-        policy_kwargs=policy_kwargs,
-        **ppo_params,
-    )
+    # Print device information
+    print(f"\n{'=' * 60}")
+    print(f"Algorithm: {algorithm.upper()}")
+    print(f"CUDA Available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"CUDA Device: {torch.cuda.get_device_name(0)}")
+    print(f"Selected Device: {device}")
+    print(f"{'=' * 60}\n")
+
+    algorithm = algorithm.lower()
+    if algorithm == "ppo":
+        return PPO(
+            policy="MlpPolicy",
+            env=vec_env,
+            policy_kwargs=policy_kwargs,
+            **algo_params,
+        )
+    elif algorithm == "trpo":
+        return TRPO(
+            policy="MlpPolicy",
+            env=vec_env,
+            policy_kwargs=policy_kwargs,
+            **algo_params,
+        )
+    else:
+        raise ValueError(f"Unknown algorithm: {algorithm}. Choose 'ppo' or 'trpo'.")
 
 
 def run_training_rendezvous(
     env: RendezvousEnv,
     embed_config: Dict[str, Any],
-    ppo_params: Dict[str, Any],
+    algo_params: Dict[str, Any],
     *,
+    algorithm: str = "ppo",
     total_timesteps: int = 200_000,
     log_info_keys: Optional[Tuple[str, ...]] = None,
     n_envs: int = 1,
     normalize: bool = True,
     save_path: Optional[str] = None,
-) -> Tuple[PPO, Dict[str, Any]]:
-    """Train a PPO model on RendezvousEnv with mean embedding.
+) -> Tuple[BaseAlgorithm, Dict[str, Any]]:
+    """Train an RL model (PPO or TRPO) on RendezvousEnv with mean embedding.
 
     Args:
         env: RendezvousEnv instance
         embed_config: Configuration for mean embedding extractor
-        ppo_params: PPO hyperparameters
+        algo_params: Algorithm hyperparameters (PPO or TRPO)
+        algorithm: "ppo" or "trpo"
         total_timesteps: Total training timesteps
         log_info_keys: Keys to log from env info dict
         n_envs: Number of parallel environments
-        normalize: Whether to apply VecNormalize
-        save_path: Path to save model and VecNormalize stats (optional)
+        normalize: Whether to apply VecNormalize (deprecated, kept for API compatibility)
+        save_path: Path to save model (optional)
 
     Returns:
-        Tuple of (trained model, info dict with vec_env if normalize=True)
+        Tuple of (trained model, info dict with vec_env)
     """
     # 1. Extract layout before wrapping (avoid wrapper hiding attributes)
     layout = env.obs_layout
     # 2. Wrap environment into vector form
     vec_env = wrap_env_for_sb3(env, n_envs=n_envs, monitor_keywords=log_info_keys, normalize=normalize)
     # 3. Build policy kwargs from layout and embedding configuration
-    policy_kwargs = make_policy_kwargs(layout, embed_dim=embed_config.get("embed_dim", 64), phi_layers=embed_config.get("phi_layers", 1))
-    # 4. Merge default PPO parameters with user provided values
-    default_ppo_params = {
-        "learning_rate": 3e-4,
-        "n_steps": 128,
-        "batch_size": 256,
-        "n_epochs": 10,
-        "ent_coef": 0.01,
-        "vf_coef": 0.7,
-        "clip_range": 0.2,
-        "target_kl": 0.02,
-        # "device" is auto-selected in setup_ppo_model (cuda if available, else cpu)
-        "verbose": 1,
-    }
+    policy_kwargs = make_policy_kwargs(
+        layout, embed_dim=embed_config.get("embed_dim", 64), phi_layers=embed_config.get("phi_layers", 1)
+    )
+
+    # 4. Set default parameters based on algorithm
+    algorithm = algorithm.lower()
+    if algorithm == "ppo":
+        default_params = {
+            "learning_rate": 3e-4,
+            "n_steps": 1024,
+            "batch_size": 512,
+            "n_epochs": 5,
+            "gamma": 0.99,
+            "gae_lambda": 0.98,
+            "clip_range": 0.2,
+            "target_kl": 0.015,
+            "verbose": 1,
+        }
+    elif algorithm == "trpo":
+        # Match Hüttenrauch's TRPO hyperparameters
+        default_params = {
+            "learning_rate": 1e-3,  # vf_stepsize
+            "n_steps": 2048,  # timesteps_per_batch
+            "batch_size": 128,
+            "gamma": 0.99,
+            "gae_lambda": 0.98,
+            "n_critic_updates": 5,  # vf_iters
+            "cg_max_steps": 10,  # cg_iters
+            "cg_damping": 0.1,
+            "target_kl": 0.01,  # max_kl
+            "verbose": 1,
+        }
+    else:
+        raise ValueError(f"Unknown algorithm: {algorithm}")
+
     # Update defaults with supplied parameters
-    default_ppo_params.update(ppo_params)
+    default_params.update(algo_params)
+
     # 5. Create model
-    model = setup_ppo_model(vec_env, policy_kwargs, default_ppo_params)
+    model = setup_model(vec_env, policy_kwargs, default_params, algorithm=algorithm)
     # 6. Train model
     model.learn(total_timesteps=total_timesteps)
 
-    # 7. Save model and VecNormalize stats if path provided
+    # 7. Save model if path provided
     if save_path:
         model.save(save_path)
         print(f"Model saved to {save_path}")
-
-        # Save VecNormalize statistics for proper evaluation
-        if normalize:
-            vecnorm_path = save_path.replace(".zip", "_vecnormalize.pkl")
-            vec_env.save(vecnorm_path)
-            print(f"VecNormalize stats saved to {vecnorm_path}")
 
     # Collect diagnostic info
     info = {
         "layout": layout,
         "embed_config": embed_config,
-        "ppo_params": default_ppo_params,
-        "vec_env": vec_env if normalize else None,  # Include vec_env for manual saving
+        "algo_params": default_params,
+        "algorithm": algorithm,
+        "vec_env": vec_env,
     }
     return model, info
 
@@ -178,12 +224,22 @@ if __name__ == "__main__":
     parser.add_argument("--num-agents", type=int, default=4, help="Number of agents")
     parser.add_argument("--world-size", type=float, default=10.0, help="Side length of the world")
     parser.add_argument("--max-steps", type=int, default=100, help="Maximum steps per episode")
-    parser.add_argument("--obs-model", type=str, default="local_basic", choices=[
-        "global_basic", "global_extended", "local_basic", "local_extended", "local_comm", "classic"
-    ], help="Observation model to use")
-    parser.add_argument("--comm-radius", type=float, default=None, help="Communication radius (None defaults to world size)")
-    parser.add_argument("--kinematics", type=str, default="single", choices=["single", "double"], help="Kinematic model")
-    parser.add_argument("--max-agents", type=int, default=None, help="Maximum agents for scale‑invariant observation size")
+    parser.add_argument(
+        "--obs-model",
+        type=str,
+        default="local_basic",
+        choices=["global_basic", "global_extended", "local_basic", "local_extended", "local_comm", "classic"],
+        help="Observation model to use",
+    )
+    parser.add_argument(
+        "--comm-radius", type=float, default=None, help="Communication radius (None defaults to world size)"
+    )
+    parser.add_argument(
+        "--kinematics", type=str, default="single", choices=["single", "double"], help="Kinematic model"
+    )
+    parser.add_argument(
+        "--max-agents", type=int, default=None, help="Maximum agents for scale‑invariant observation size"
+    )
     parser.add_argument("--embed-dim", type=int, default=64, help="Dimensionality of the mean embedding")
     parser.add_argument("--phi-layers", type=int, default=1, help="Number of hidden layers in the φ network")
     parser.add_argument("--learning-rate", type=float, default=3e-4, help="Learning rate for PPO")
@@ -195,7 +251,9 @@ if __name__ == "__main__":
     parser.add_argument("--n-envs", type=int, default=1, help="Number of parallel vector environments")
     parser.add_argument("--no-normalize", action="store_true", help="Disable observation and reward normalisation")
     parser.add_argument("--log-info", nargs="*", default=None, help="Info keys to log via VecMonitor")
-    parser.add_argument("--model-path", type=str, default="models/rendezvous_model.zip", help="Path to save the trained model")
+    parser.add_argument(
+        "--model-path", type=str, default="models/rendezvous_model.zip", help="Path to save the trained model"
+    )
     args = parser.parse_args()
 
     # Build environment configuration
@@ -218,7 +276,7 @@ if __name__ == "__main__":
         "n_epochs": args.n_epochs,
         "device": args.device,
     }
-    
+
     env = RendezvousEnv(**env_params)
 
     # Run training

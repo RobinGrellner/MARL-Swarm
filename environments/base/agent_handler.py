@@ -16,7 +16,6 @@ class AgentHandler:
         acc_v_max: float,
         acc_omega_max: float,
     ) -> None:
-
         self.num_agents = num_agents
         self.kinematics = kinematics
         self.v_max = v_max
@@ -46,9 +45,7 @@ class AgentHandler:
             raise RuntimeError("Actions must be provided for all agents")
 
         # Convert actions to array in the same order as self.agents for handling
-        clean_actions = np.array(
-            [actions[agent] for agent in self.agents], dtype=np.float32
-        )
+        clean_actions = np.array([actions[agent] for agent in self.agents], dtype=np.float32)
 
         # Clip actions based on kinematics mode
         if self.kinematics == "single":
@@ -77,12 +74,8 @@ class AgentHandler:
             self.linear_vels = lin_acs
             self.angular_vels = ang_acs
         else:
-            self.linear_vels = np.clip(
-                self.linear_vels + lin_acs, -self.v_max, self.v_max
-            )
-            self.angular_vels = np.clip(
-                self.angular_vels + ang_acs, -self.omega_max, self.omega_max
-            )
+            self.linear_vels = np.clip(self.linear_vels + lin_acs, -self.v_max, self.v_max)
+            self.angular_vels = np.clip(self.angular_vels + ang_acs, -self.omega_max, self.omega_max)
         # Update orientations
         self.orientations = self.orientations + self.angular_vels
         self.orientations = (self.orientations + math.pi) % (2 * math.pi) - math.pi
@@ -94,9 +87,7 @@ class AgentHandler:
 
     def initialize_random_positions(self, world_size):
         """Initializes the positions of the agents uniformly inside of the worlds boundaries."""
-        self.positions = np.random.uniform(
-            0.0, world_size, (self.num_agents, 2)
-        ).astype(np.float32)
+        self.positions = np.random.uniform(0.0, world_size, (self.num_agents, 2)).astype(np.float32)
         self.linear_vels = np.zeros(self.num_agents, dtype=np.float32)
         self.angular_vels = np.zeros(self.num_agents, dtype=np.float32)
         rand_angles = np.random.uniform(-math.pi, math.pi, self.num_agents)

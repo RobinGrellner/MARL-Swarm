@@ -17,6 +17,7 @@ class RendezvousEnv(BaseEnv):
     shared among all agents and penalises the sum of pairwise distances
     as well as the magnitude of the control signals.
     """
+
     metadata = {"name": "rendezvous_env", "render_modes": ["human"]}
 
     def __init__(
@@ -72,8 +73,7 @@ class RendezvousEnv(BaseEnv):
 
         # Precompute an array of indices for neighbour iteration.
         self._neighbour_indices: List[List[int]] = [
-            [j for j in range(self.agent_handler.num_agents) if j != i]
-            for i in range(self.agent_handler.num_agents)
+            [j for j in range(self.agent_handler.num_agents) if j != i] for i in range(self.agent_handler.num_agents)
         ]
 
         # Pygame-Initialisation
@@ -98,9 +98,7 @@ class RendezvousEnv(BaseEnv):
             # own position (x,y), mean position (x,y), linear velocity, angular velocity (optional), orientation
             base_dim = 6 if kin == "single" else 7
             pos_low = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32)
-            pos_high = np.array(
-                [world_size, world_size, world_size, world_size], dtype=np.float32
-            )
+            pos_high = np.array([world_size, world_size, world_size, world_size], dtype=np.float32)
             v_low = np.array([-self.agent_handler.v_max], dtype=np.float32)
             v_high = np.array([self.agent_handler.v_max], dtype=np.float32)
             if kin == "single":
@@ -112,9 +110,7 @@ class RendezvousEnv(BaseEnv):
             ori_low = np.array([-math.pi], dtype=np.float32)
             ori_high = np.array([math.pi], dtype=np.float32)
             obs_low = np.concatenate([pos_low, v_low, w_low, ori_low], dtype=np.float32)
-            obs_high = np.concatenate(
-                [pos_high, v_high, w_high, ori_high], dtype=np.float32
-            )
+            obs_high = np.concatenate([pos_high, v_high, w_high, ori_high], dtype=np.float32)
 
             # "Save" dimensions
             self._local_feature_dim = base_dim
@@ -122,9 +118,7 @@ class RendezvousEnv(BaseEnv):
             self._max_neighbours = 0
             self.obs_total_dim = base_dim
             for name in self.agent_names:
-                obs_spaces[name] = spaces.Box(
-                    low=obs_low, high=obs_high, shape=(base_dim,), dtype=np.float32
-                )
+                obs_spaces[name] = spaces.Box(low=obs_low, high=obs_high, shape=(base_dim,), dtype=np.float32)
             return obs_spaces
 
         # Determine local and neighbour feature dimensions
@@ -132,20 +126,14 @@ class RendezvousEnv(BaseEnv):
             neighbour_feature_dim = 2  # distance, bearing
             local_feature_dim = 2  # distance to wall, bearing to wall
         elif self.obs_model == "global_extended":
-            neighbour_feature_dim = (
-                5  # dist, bearing, relative orientation, rel vel x, rel vel y
-            )
+            neighbour_feature_dim = 5  # dist, bearing, relative orientation, rel vel x, rel vel y
             local_feature_dim = 2
         elif self.obs_model == "local_extended":
             neighbour_feature_dim = 3  # dist, bearing, relative orientation
             local_feature_dim = 2
         elif self.obs_model == "local_comm":
-            neighbour_feature_dim = (
-                4  # dist, bearing, relative orientation, neighbour size
-            )
-            local_feature_dim = (
-                3  # distance to wall, bearing to wall, own neighbourhood size
-            )
+            neighbour_feature_dim = 4  # dist, bearing, relative orientation, neighbour size
+            local_feature_dim = 3  # distance to wall, bearing to wall, own neighbourhood size
         else:
             raise ValueError(f"Unknown observation model: {self.obs_model}")
 
@@ -156,27 +144,70 @@ class RendezvousEnv(BaseEnv):
         self._max_neighbours = self.max_agents - 1
 
         # Total observation length: local + neighbour*max_neighbours + mask
-        self.obs_total_dim = (
-            local_feature_dim
-            + self._max_neighbours * neighbour_feature_dim
-            + self._max_neighbours
-        )
+        self.obs_total_dim = local_feature_dim + self._max_neighbours * neighbour_feature_dim + self._max_neighbours
 
-        # Build bounds: mask entries in [0,1], others unbounded
+        # Build bounds with normalized values
+        # All distances and counts normalized to [0, 1]
+        # Bearings in [-π, π]
         low = -np.inf * np.ones(self.obs_total_dim, dtype=np.float32)
         high = np.inf * np.ones(self.obs_total_dim, dtype=np.float32)
+
+        # Local features: [wall_dist, wall_bearing, (own_count)]
+        low[0] = 0.0  # wall distance (normalized)
+        high[0] = 1.0
+        low[1] = -np.pi  # wall bearing
+        high[1] = np.pi
+        if local_feature_dim == 3:  # local_comm has own neighborhood count
+            low[2] = 0.0
+            high[2] = 1.0
+
+        # Neighbor features repeated max_neighbours times
+        for i in range(self._max_neighbours):
+            offset = local_feature_dim + i * neighbour_feature_dim
+            if self.obs_model in {"global_basic", "local_basic"}:
+                low[offset] = 0.0  # distance (normalized)
+                high[offset] = 1.0
+                low[offset + 1] = -np.pi  # bearing
+                high[offset + 1] = np.pi
+            elif self.obs_model in {"local_extended"}:
+                low[offset] = 0.0  # distance (normalized)
+                high[offset] = 1.0
+                low[offset + 1] = -np.pi  # bearing
+                high[offset + 1] = np.pi
+                low[offset + 2] = -np.pi  # relative orientation
+                high[offset + 2] = np.pi
+            elif self.obs_model == "local_comm":
+                low[offset] = 0.0  # distance (normalized)
+                high[offset] = 1.0
+                low[offset + 1] = -np.pi  # bearing
+                high[offset + 1] = np.pi
+                low[offset + 2] = -np.pi  # relative orientation
+                high[offset + 2] = np.pi
+                low[offset + 3] = 0.0  # neighbor count (normalized)
+                high[offset + 3] = 1.0
+            elif self.obs_model == "global_extended":
+                low[offset] = 0.0  # distance (normalized)
+                high[offset] = 1.0
+                low[offset + 1] = -np.pi  # bearing
+                high[offset + 1] = np.pi
+                low[offset + 2] = -np.pi  # relative orientation
+                high[offset + 2] = np.pi
+                low[offset + 3] = -1.0  # relative velocity x (normalized)
+                high[offset + 3] = 1.0
+                low[offset + 4] = -1.0  # relative velocity y (normalized)
+                high[offset + 4] = 1.0
+
+        # Mask entries in [0, 1]
         mask_start = local_feature_dim + self._max_neighbours * neighbour_feature_dim
         low[mask_start:] = 0.0
         high[mask_start:] = 1.0
         for name in self.agent_names:
-            obs_spaces[name] = spaces.Box(
-                low=low, high=high, shape=(self.obs_total_dim,), dtype=np.float32
-            )
+            obs_spaces[name] = spaces.Box(low=low, high=high, shape=(self.obs_total_dim,), dtype=np.float32)
         # Expose a layout descriptor used by custom feature extractors.  This
         # dictionary encodes the positions of the local features, neighbour
         # feature block and mask within each agent's observation vector.  It
         # also records the number of neighbours and dimensionality of each
-        # feature block.  Training-Skripts can use this attribute to slice observations 
+        # feature block.  Training-Skripts can use this attribute to slice observations
         # without hard‑coding the sizes here.
         self.obs_layout = {
             "local_dim": self._local_feature_dim,
@@ -226,14 +257,13 @@ class RendezvousEnv(BaseEnv):
             comm_radius=self.comm_radius,
             max_neighbours=self._max_neighbours,
             neighbour_feature_dim=self._neighbour_feature_dim,
+            v_max=self.agent_handler.v_max,
         )
 
     # ------------------------------------------------------------------
     # Reward computation
     # ------------------------------------------------------------------
-    def _calculate_rewards(
-        self, actions: Optional[Dict[str, np.ndarray]]
-    ) -> Dict[str, float]:
+    def _calculate_rewards(self, actions: Optional[Dict[str, np.ndarray]]) -> Dict[str, float]:
         """Compute global reward shared by all agents.
 
         Reward = α * sum_{i<j} min(d_ij, dc) + β * sum_i ||a_i||
@@ -359,9 +389,7 @@ class RendezvousEnv(BaseEnv):
         self.__render_agents()
         # Display step count
         if self._font is not None:
-            text_surface = self._font.render(
-                f"Steps: {self.step_count}", True, (0, 0, 0)
-            )
+            text_surface = self._font.render(f"Steps: {self.step_count}", True, (0, 0, 0))
             assert self.screen is not None
             self.screen.blit(text_surface, (10, 10))
         pygame.display.flip()
@@ -398,9 +426,7 @@ class RendezvousEnv(BaseEnv):
             arrow_len = 10
             end_x = x_pix + int(arrow_len * math.cos(orient))
             end_y = y_pix + int(arrow_len * math.sin(orient))
-            pygame.draw.line(
-                self.screen, (255, 0, 0), (x_pix, y_pix), (end_x, end_y), 2
-            )
+            pygame.draw.line(self.screen, (255, 0, 0), (x_pix, y_pix), (end_x, end_y), 2)
             # Draw communication radius for local models
             if self.obs_model.startswith("local"):
                 pygame.draw.circle(
