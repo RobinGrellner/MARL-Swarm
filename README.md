@@ -9,7 +9,9 @@ _trpo_20_agents_scalable.zip --tensorboard-log logs/trpo/huttenrauch_scalable --
 #### PPO
 
 ### Evaluation:
-
+Running a experiment configuration:
+python evaluation/run_scalability_experiment.py
+  --config training/configs/embed_scaling.json
 
 
 **Multi-Agent Reinforcement Learning for Swarm Robotics Research**
