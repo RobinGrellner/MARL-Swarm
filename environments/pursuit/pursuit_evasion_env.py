@@ -14,6 +14,7 @@ from gymnasium import spaces
 from typing import Dict, Tuple, Optional
 
 from environments.base.base_environment import BaseEnv
+from environments.pursuit.evasion_agent import create_evasion_agent
 
 
 class PursuitEvasionEnv(BaseEnv):
@@ -62,6 +63,7 @@ class PursuitEvasionEnv(BaseEnv):
         comm_radius: Optional[float] = None,
         max_pursuers: Optional[int] = None,
         kinematics: str = "single",
+        evader_strategy: str = "voronoi_center",
         render_mode: Optional[str] = None,
         fps: int = 20,
     ):
@@ -78,6 +80,7 @@ class PursuitEvasionEnv(BaseEnv):
         self.evader_speed = evader_speed
         self.obs_model = obs_model
         self.comm_radius = comm_radius
+        self.evader_strategy = evader_strategy
 
         # Scale-invariance support
         if max_pursuers is not None and max_pursuers < num_pursuers:
@@ -88,6 +91,11 @@ class PursuitEvasionEnv(BaseEnv):
         self.evader_pos = np.zeros(2, dtype=np.float32)
         self.evader_vel = 0.0
         self.evader_orientation = 0.0
+
+        # Create evasion agent
+        self.evasion_agent = create_evasion_agent(
+            strategy=evader_strategy, world_size=world_size, max_speed=evader_speed
+        )
 
         # Rendering setup (not passed to BaseEnv)
         self.render_mode = render_mode
@@ -344,22 +352,17 @@ class PursuitEvasionEnv(BaseEnv):
 
     def _move_evader(self) -> None:
         """
-        Move evader using a simple scripted policy.
+        Move evader using the configured evasion strategy.
 
-        Current policy: Move away from nearest pursuer.
+        Current strategy: Voronoi-based (from Hüttenrauch et al. 2019)
         """
-        # Find nearest pursuer
-        distances = np.linalg.norm(self.agent_handler.positions - self.evader_pos, axis=1)
-        nearest_idx = np.argmin(distances)
-        nearest_pos = self.agent_handler.positions[nearest_idx]
-
-        # Calculate direction away from nearest pursuer
-        direction = self.evader_pos - nearest_pos
-        if np.linalg.norm(direction) > 0:
-            direction = direction / np.linalg.norm(direction)
+        # Get evasion action from the evasion agent
+        direction, speed = self.evasion_agent.compute_evasion_action(
+            evader_pos=self.evader_pos, pursuer_positions=self.agent_handler.positions, torus=False
+        )
 
         # Move evader
-        self.evader_pos += direction * self.evader_speed
+        self.evader_pos += direction * speed
 
         # Update evader orientation
         if np.linalg.norm(direction) > 0:

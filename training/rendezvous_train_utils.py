@@ -54,7 +54,6 @@ def wrap_env_for_sb3(
     return vec_env
 
 
-# TODO ab hier nachprüfen
 def make_policy_kwargs(layout: Dict[str, int], *, embed_dim: int = 64, phi_layers: int = 1) -> Dict[str, Any]:
     local_dim = layout["local_dim"]
     neigh_dim = layout["neigh_dim"]
@@ -136,6 +135,7 @@ def run_training_rendezvous(
     n_envs: int = 1,
     normalize: bool = True,
     save_path: Optional[str] = None,
+    resume_from: Optional[str] = None,
 ) -> Tuple[BaseAlgorithm, Dict[str, Any]]:
     """Train an RL model (PPO or TRPO) on RendezvousEnv with mean embedding.
 
@@ -149,6 +149,7 @@ def run_training_rendezvous(
         n_envs: Number of parallel environments
         normalize: Whether to apply VecNormalize (deprecated, kept for API compatibility)
         save_path: Path to save model (optional)
+        resume_from: Path to a saved model to resume training from (optional)
 
     Returns:
         Tuple of (trained model, info dict with vec_env)
@@ -157,47 +158,70 @@ def run_training_rendezvous(
     layout = env.obs_layout
     # 2. Wrap environment into vector form
     vec_env = wrap_env_for_sb3(env, n_envs=n_envs, monitor_keywords=log_info_keys, normalize=normalize)
-    # 3. Build policy kwargs from layout and embedding configuration
-    policy_kwargs = make_policy_kwargs(
-        layout, embed_dim=embed_config.get("embed_dim", 64), phi_layers=embed_config.get("phi_layers", 1)
-    )
 
-    # 4. Set default parameters based on algorithm
-    algorithm = algorithm.lower()
-    if algorithm == "ppo":
-        default_params = {
-            "learning_rate": 3e-4,
-            "n_steps": 1024,
-            "batch_size": 512,
-            "n_epochs": 5,
-            "gamma": 0.99,
-            "gae_lambda": 0.98,
-            "clip_range": 0.2,
-            "target_kl": 0.015,
-            "verbose": 1,
-        }
-    elif algorithm == "trpo":
-        # Match Hüttenrauch's TRPO hyperparameters
-        default_params = {
-            "learning_rate": 1e-3,  # vf_stepsize
-            "n_steps": 2048,  # timesteps_per_batch
-            "batch_size": 128,
-            "gamma": 0.99,
-            "gae_lambda": 0.98,
-            "n_critic_updates": 5,  # vf_iters
-            "cg_max_steps": 10,  # cg_iters
-            "cg_damping": 0.1,
-            "target_kl": 0.01,  # max_kl
-            "verbose": 1,
-        }
+    # 3. Handle resume vs fresh training
+    if resume_from:
+        # Load a previously trained model and continue training
+        print(f"\n{'=' * 60}")
+        print(f"Resuming training from: {resume_from}")
+        print(f"{'=' * 60}\n")
+
+        # Determine algorithm from file
+        resume_algorithm = algorithm.lower()
+        if resume_algorithm == "ppo":
+            model = PPO.load(resume_from, env=vec_env, device=algo_params.get("device", "cpu"))
+        elif resume_algorithm == "trpo":
+            model = TRPO.load(resume_from, env=vec_env, device=algo_params.get("device", "cpu"))
+        else:
+            raise ValueError(f"Unknown algorithm: {resume_algorithm}")
+
+        # Update learning rate if provided
+        if "learning_rate" in algo_params:
+            model.learning_rate = algo_params["learning_rate"]
     else:
-        raise ValueError(f"Unknown algorithm: {algorithm}")
+        # Create a new model from scratch
+        # 3a. Build policy kwargs from layout and embedding configuration
+        policy_kwargs = make_policy_kwargs(
+            layout, embed_dim=embed_config.get("embed_dim", 64), phi_layers=embed_config.get("phi_layers", 1)
+        )
 
-    # Update defaults with supplied parameters
-    default_params.update(algo_params)
+        # 4. Set default parameters based on algorithm
+        algorithm = algorithm.lower()
+        if algorithm == "ppo":
+            default_params = {
+                "learning_rate": 3e-4,
+                "n_steps": 1024,
+                "batch_size": 512,
+                "n_epochs": 5,
+                "gamma": 0.99,
+                "gae_lambda": 0.98,
+                "clip_range": 0.2,
+                "target_kl": 0.015,
+                "verbose": 1,
+            }
+        elif algorithm == "trpo":
+            # Match Hüttenrauch's TRPO hyperparameters
+            default_params = {
+                "learning_rate": 1e-3,  # vf_stepsize
+                "n_steps": 2048,  # timesteps_per_batch
+                "batch_size": 128,
+                "gamma": 0.99,
+                "gae_lambda": 0.98,
+                "n_critic_updates": 5,  # vf_iters
+                "cg_max_steps": 10,  # cg_iters
+                "cg_damping": 0.1,
+                "target_kl": 0.01,  # max_kl
+                "verbose": 1,
+            }
+        else:
+            raise ValueError(f"Unknown algorithm: {algorithm}")
 
-    # 5. Create model
-    model = setup_model(vec_env, policy_kwargs, default_params, algorithm=algorithm)
+        # Update defaults with supplied parameters
+        default_params.update(algo_params)
+
+        # 5. Create model
+        model = setup_model(vec_env, policy_kwargs, default_params, algorithm=algorithm)
+
     # 6. Train model
     model.learn(total_timesteps=total_timesteps)
 
