@@ -8,9 +8,11 @@ to capture a scripted evader agent.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 
 from environments.pursuit.pursuit_evasion_env import PursuitEvasionEnv
 from training.pursuit_evasion_train_utils import run_training_pursuit_evasion
+from training.common_train_utils import add_common_training_args, build_algo_params, build_embed_config
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,13 +25,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-steps", type=int, default=100, help="Maximum number of steps per episode")
     parser.add_argument("--capture-radius", type=float, default=0.5, help="Capture distance threshold")
     parser.add_argument("--evader-speed", type=float, default=1.0, help="Maximum speed of evader")
-    parser.add_argument("--pursuer-speed", type=float, default=1.0, help="Maximum speed of pursuers")
     parser.add_argument(
         "--evader-strategy",
         type=str,
-        default="voronoi_center",
-        choices=["simple", "max_min_distance", "weighted_escape", "voronoi_center"],
-        help="Evasion strategy (Hüttenrauch: voronoi_center)",
+        default="huttenrauch",
+        choices=["simple", "max_min_distance", "weighted_escape", "voronoi_center", "huttenrauch"],
+        help="Evasion strategy (Hüttenrauch: huttenrauch)",
     )
     parser.add_argument(
         "--obs-model",
@@ -43,19 +44,16 @@ def parse_args() -> argparse.Namespace:
         "--kinematics", type=str, default="single", choices=["single", "double"], help="Agent kinematic model"
     )
     parser.add_argument("--max-pursuers", type=int, default=None, help="Maximum number of pursuers for scale invariance")
+    parser.add_argument("--v-max", type=float, default=1.0, help="Maximum linear velocity for pursuers")
+    parser.add_argument("--omega-max", type=float, default=1.0, help="Maximum angular velocity for pursuers")
+    parser.add_argument("--torus", action="store_true", help="Use toroidal world topology (wraparound)")
 
-    # Training parameters
-    parser.add_argument("--algorithm", type=str, default="ppo", choices=["ppo", "trpo"], help="RL algorithm to use")
-    parser.add_argument("--total-timesteps", type=int, default=200_000, help="Total number of environment steps for training")
-    parser.add_argument("--learning-rate", type=float, default=None, help="Learning rate")
-    parser.add_argument("--num-vec-envs", type=int, default=8, help="Number of parallel environments")
-    parser.add_argument("--n-steps", type=int, default=None, help="Rollout length")
-    parser.add_argument("--batch-size", type=int, default=None, help="Minibatch size")
-    parser.add_argument("--n-epochs", type=int, default=None, help="Number of epochs (PPO only)")
-    parser.add_argument("--model-path", type=str, default="pursuit_evasion_model.zip", help="File to save the trained model")
-    parser.add_argument("--resume-from", type=str, default=None, help="Path to a saved model to resume training from")
-    parser.add_argument("--tensorboard-log", type=str, default=None, help="TensorBoard log directory")
-    parser.add_argument("--use-cuda", action="store_true", help="Use CUDA/GPU for training")
+    # Common training and architecture parameters (shared across all scripts)
+    add_common_training_args(parser)
+
+    # Override default model path for pursuit-evasion with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    parser.set_defaults(model_path=f"models/pe_{timestamp}.zip")
 
     return parser.parse_args()
 
@@ -71,33 +69,19 @@ def main() -> None:
         max_steps=args.max_steps,
         capture_radius=args.capture_radius,
         evader_speed=args.evader_speed,
+        v_max=args.v_max,
         obs_model=args.obs_model,
         comm_radius=args.comm_radius,
         max_pursuers=args.max_pursuers if args.max_pursuers is not None else args.num_pursuers,
         kinematics=args.kinematics,
+        omega_max=args.omega_max,
         evader_strategy=args.evader_strategy,
+        torus=args.torus,
     )
 
-    # Build algorithm parameters from CLI args
-    algo_params = {"verbose": 1}
-    if args.learning_rate is not None:
-        algo_params["learning_rate"] = args.learning_rate
-    if args.n_steps is not None:
-        algo_params["n_steps"] = args.n_steps
-    if args.batch_size is not None:
-        algo_params["batch_size"] = args.batch_size
-    if args.n_epochs is not None and args.algorithm == "ppo":
-        algo_params["n_epochs"] = args.n_epochs
-    if args.tensorboard_log is not None:
-        algo_params["tensorboard_log"] = args.tensorboard_log
-
-    algo_params["device"] = "cuda" if args.use_cuda else "cpu"
-
-    # Embedding configuration
-    embed_config = {
-        "embed_dim": 64,
-        "phi_layers": 1,
-    }
+    # Build algorithm parameters and embedding configuration from CLI args
+    algo_params = build_algo_params(args, args.algorithm)
+    embed_config = build_embed_config(args)
 
     print(f"\n{'=' * 60}")
     print(f"Training {args.algorithm.upper()} on Pursuit-Evasion Environment")
@@ -108,6 +92,12 @@ def main() -> None:
     print(f"Evader Strategy: {args.evader_strategy} (Hüttenrauch)")
     print(f"Total Timesteps: {args.total_timesteps:,}")
     print(f"Parallel Envs: {args.num_vec_envs}")
+    print(f"\nArchitecture:")
+    print(f"  Activation: {args.activation}")
+    print(f"  Aggregation: {args.aggregation}")
+    print(f"  Embed Dim: {args.embed_dim}")
+    print(f"  Phi Layers: {args.phi_layers}")
+    print(f"  Policy Layers: {args.policy_layers}")
     print(f"{'=' * 60}\n")
 
     # Train model using utility function

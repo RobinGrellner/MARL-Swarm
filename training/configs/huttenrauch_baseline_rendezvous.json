@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "experiment_name": "huttenrauch_baseline_rendezvous",
+    "version": "1.0",
+    "description": "Exact baseline matching Hüttenrauch et al. (2019) Rendezvous configuration. Used to validate implementation and establish baseline convergence behavior.",
+    "thesis_chapter": "4.1 - Baseline Validation",
+    "task": "Rendezvous",
+    "source": "Deep Reinforcement Learning for Swarm Systems (arXiv:1807.06613)",
+    "created": "2026-01-24",
+    "notes": "These are the exact parameters Hüttenrauch used. They achieved convergence in 100-200 TRPO iterations (~500 iterations total training)."
+  },
+
+  "defaults": {
+    "env_config": {
+      "world_size": 100.0,
+      "max_steps": 1024,
+      "obs_model": "local_basic",
+      "comm_radius": 40.0,
+      "torus": false,
+      "break_distance_threshold": 5.0,
+      "kinematics": "single",
+      "v_max": 10.0,
+      "omega_max": 3.14159,
+      "max_agents": 50
+    },
+    "train_config": {
+      "activation": "relu",
+      "aggregation": "mean",
+      "phi_layers": 1,
+      "algorithm": "trpo",
+      "total_timesteps": 10000000,
+      "learning_rate": 0.001,
+      "verbose": 1
+    }
+  },
+
+  "experiments": {
+    "huttenrauch_baseline_20agents_embed64": {
+      "description": "Hüttenrauch baseline: 20 agents, embed_dim=64, seed=0. This is the validation run to confirm convergence.",
+      "env_config": {
+        "num_agents": 20
+      },
+      "train_config": {
+        "embed_dim": 64,
+        "seed": 0
+      }
+    }
+  }
+}

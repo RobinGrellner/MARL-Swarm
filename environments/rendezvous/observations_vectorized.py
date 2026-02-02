@@ -115,11 +115,16 @@ def compute_observations_vectorized(
     # Step 2: Compute ALL pairwise distances (N, N)
     distances = np.linalg.norm(diff, axis=2)
 
-    # Step 3: Compute ALL pairwise bearings (N, N)
+    # Step 3: Compute ALL pairwise bearings (N, N) as (cos, sin) pairs
+    # This avoids discontinuity at ±π that exists with raw angle representation
     bearings_raw = np.arctan2(diff[:, :, 1], diff[:, :, 0])  # (N, N)
     orientations_expanded = orientations[:, np.newaxis]  # (N, 1)
     bearings = bearings_raw - orientations_expanded  # (N, N)
     bearings = (bearings + np.pi) % (2 * np.pi) - np.pi  # Wrap to [-π, π]
+
+    # Convert to (cos, sin) representation for neural network stability
+    bearings_cos = np.cos(bearings)  # (N, N)
+    bearings_sin = np.sin(bearings)  # (N, N)
 
     # Step 4: Sort neighbors by distance for each agent
     # Use stable sort for deterministic tie-breaking (ensures reproducibility)
@@ -165,7 +170,10 @@ def compute_observations_vectorized(
         delta_w = wall_targets - positions
         wall_bearings = np.arctan2(delta_w[:, 1], delta_w[:, 0]) - orientations
         wall_bearings = (wall_bearings + np.pi) % (2 * np.pi) - np.pi
-        wall_bearings = wall_bearings.astype(np.float32)
+
+        # Convert to (cos, sin) representation for neural network stability
+        wall_bearings_cos = np.cos(wall_bearings).astype(np.float32)
+        wall_bearings_sin = np.sin(wall_bearings).astype(np.float32)
 
     # Step 6: Select top max_neighbours for each agent (excluding self)
     # sorted_indices[:, 0] is self, so take indices 1 onwards
@@ -180,24 +188,27 @@ def compute_observations_vectorized(
     # Gather distances and bearings for selected neighbors
     row_indices = np.arange(num_agents)[:, np.newaxis]  # (N, 1)
     neighbor_dists = distances[row_indices, neighbor_indices]  # (N, max_neighbours)
-    neighbor_bears = bearings[row_indices, neighbor_indices]  # (N, max_neighbours)
+    neighbor_bears_cos = bearings_cos[row_indices, neighbor_indices]  # (N, max_neighbours)
+    neighbor_bears_sin = bearings_sin[row_indices, neighbor_indices]  # (N, max_neighbours)
 
-    # Normalize neighbor distances by world_size
+    # Normalize neighbor distances by world_size (matching Hüttenrauch for Rendezvous)
     neighbor_dists = neighbor_dists / world_size
 
     # Step 7: Compute additional features based on observation model
     if obs_model in {"global_basic", "local_basic"}:
-        # Only distance and bearing
-        neighbor_features = np.stack([neighbor_dists, neighbor_bears], axis=2)  # (N, max_neighbours, 2)
+        # Distance and bearing (as cos, sin pair for neural network stability)
+        neighbor_features = np.stack([neighbor_dists, neighbor_bears_cos, neighbor_bears_sin], axis=2)  # (N, max_neighbours, 3)
 
     elif obs_model in {"global_extended", "local_extended", "local_comm"}:
-        # Compute relative orientations (needed by all three)
+        # Compute relative orientations (needed by all three) as (cos, sin) pairs
         orientations_matrix = orientations[np.newaxis, :] - orientations[:, np.newaxis]  # (N, N)
         orientations_matrix = (orientations_matrix + np.pi) % (2 * np.pi) - np.pi
         neighbor_oris = orientations_matrix[row_indices, neighbor_indices]  # (N, max_neighbours)
+        neighbor_oris_cos = np.cos(neighbor_oris)  # (N, max_neighbours)
+        neighbor_oris_sin = np.sin(neighbor_oris)  # (N, max_neighbours)
 
         if obs_model == "global_extended":
-            # Need distance, bearing, relative orientation, relative velocity
+            # Need distance, bearing (cos/sin), relative orientation (cos/sin), relative velocity
             velocity_vectors = np.stack(
                 [linear_vels * np.cos(orientations), linear_vels * np.sin(orientations)], axis=1
             )  # (N, 2)
@@ -209,17 +220,17 @@ def compute_observations_vectorized(
             neighbor_vels = neighbor_vels / (2.0 * v_max)
 
             neighbor_features = np.stack(
-                [neighbor_dists, neighbor_bears, neighbor_oris, neighbor_vels[:, :, 0], neighbor_vels[:, :, 1]], axis=2
-            )  # (N, max_neighbours, 5)
+                [neighbor_dists, neighbor_bears_cos, neighbor_bears_sin, neighbor_oris_cos, neighbor_oris_sin, neighbor_vels[:, :, 0], neighbor_vels[:, :, 1]], axis=2
+            )  # (N, max_neighbours, 7)
 
         elif obs_model == "local_extended":
-            # Need distance, bearing, relative orientation
+            # Need distance, bearing (cos/sin), relative orientation (cos/sin)
             neighbor_features = np.stack(
-                [neighbor_dists, neighbor_bears, neighbor_oris], axis=2
-            )  # (N, max_neighbours, 3)
+                [neighbor_dists, neighbor_bears_cos, neighbor_bears_sin, neighbor_oris_cos, neighbor_oris_sin], axis=2
+            )  # (N, max_neighbours, 5)
 
         elif obs_model == "local_comm":
-            # Need distance, bearing, relative orientation, neighbor's neighborhood count
+            # Need distance, bearing (cos/sin), relative orientation (cos/sin), neighbor's neighborhood count
             # Compute neighborhood counts for all agents (vectorized)
             within_comm = distances <= comm_radius  # (N, N)
             np.fill_diagonal(within_comm, False)  # Don't count self
@@ -232,8 +243,8 @@ def compute_observations_vectorized(
             neighbor_counts = neighbor_counts / (num_agents - 1)
 
             neighbor_features = np.stack(
-                [neighbor_dists, neighbor_bears, neighbor_oris, neighbor_counts], axis=2
-            )  # (N, max_neighbours, 4)
+                [neighbor_dists, neighbor_bears_cos, neighbor_bears_sin, neighbor_oris_cos, neighbor_oris_sin, neighbor_counts], axis=2
+            )  # (N, max_neighbours, 6)
 
     # Step 8: Apply communication radius mask (local vs global)
     if obs_model.startswith("local"):
@@ -259,9 +270,9 @@ def compute_observations_vectorized(
         # Normalize own neighborhood count by (num_agents - 1)
         own_counts = own_counts / (num_agents - 1)
 
-        local_features = np.stack([wall_dists, wall_bearings, own_counts], axis=1)  # (N, 3)
+        local_features = np.stack([wall_dists, wall_bearings_cos, wall_bearings_sin, own_counts], axis=1)  # (N, 4)
     else:
-        local_features = np.stack([wall_dists, wall_bearings], axis=1)  # (N, 2)
+        local_features = np.stack([wall_dists, wall_bearings_cos, wall_bearings_sin], axis=1)  # (N, 3)
 
     # Step 10: Flatten neighbor features and create binary mask
     neighbor_flat = neighbor_features.reshape(num_agents, max_neighbours * neighbour_feature_dim)

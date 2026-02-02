@@ -86,7 +86,11 @@ def evaluate(args: argparse.Namespace) -> None:
             print(f"{'=' * 50}")
 
         while not done:
-            actions = {a: model.predict(obs[a], deterministic=args.deterministic)[0] for a in env.agents}
+            # Batched prediction for parameter sharing (more efficient than per-agent loops)
+            agent_list = list(env.agents)
+            obs_batch = np.stack([obs[a] for a in agent_list])  # (num_agents, obs_dim)
+            actions_batch, _ = model.predict(obs_batch, deterministic=args.deterministic)
+            actions = dict(zip(agent_list, actions_batch))
             obs, rewards, term, trunc, infos = env.step(actions)
             done = all(term[a] or trunc[a] for a in env.agents)
 

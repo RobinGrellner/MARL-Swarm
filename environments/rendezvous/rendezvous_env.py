@@ -1,6 +1,6 @@
 from environments.base.base_environment import BaseEnv
 from environments.rendezvous.observations_vectorized import compute_observations_vectorized
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import numpy as np
 import math
 import pygame
@@ -39,6 +39,7 @@ class RendezvousEnv(BaseEnv):
         fps: int = 60,
         break_distance_threshold: Optional[float] = None,
         max_agents: Optional[int] = None,
+        dt: float = 0.1,
     ):
         # Store rendezvous-specific parameters needed before base init
         self.csv_log_path = csv_log_path
@@ -59,6 +60,7 @@ class RendezvousEnv(BaseEnv):
             acc_omega_max=acc_omega_max,
             max_steps=max_steps,
             render_mode=render_mode,
+            dt=dt,
         )
 
         # Precompute constants for reward
@@ -81,6 +83,10 @@ class RendezvousEnv(BaseEnv):
         self.screen = None
         self.clock = None
         self.fps = fps
+
+        # Cache for distance matrix (computed once per step)
+        self._cached_distances: Optional[np.ndarray] = None
+        self._cached_diff: Optional[np.ndarray] = None
 
     # Methods for setup
     def _get_observation_space(self):
@@ -122,18 +128,19 @@ class RendezvousEnv(BaseEnv):
             return obs_spaces
 
         # Determine local and neighbour feature dimensions
+        # Bearings and orientations use (cos, sin) representation
         if self.obs_model in {"global_basic", "local_basic"}:
-            neighbour_feature_dim = 2  # distance, bearing
-            local_feature_dim = 2  # distance to wall, bearing to wall
+            neighbour_feature_dim = 3  # distance, cos(bearing), sin(bearing)
+            local_feature_dim = 3  # distance to wall, cos(bearing to wall), sin(bearing to wall)
         elif self.obs_model == "global_extended":
-            neighbour_feature_dim = 5  # dist, bearing, relative orientation, rel vel x, rel vel y
-            local_feature_dim = 2
+            neighbour_feature_dim = 7  # dist, cos(bearing), sin(bearing), cos(ori), sin(ori), rel vel x, rel vel y
+            local_feature_dim = 3
         elif self.obs_model == "local_extended":
-            neighbour_feature_dim = 3  # dist, bearing, relative orientation
-            local_feature_dim = 2
+            neighbour_feature_dim = 5  # dist, cos(bearing), sin(bearing), cos(ori), sin(ori)
+            local_feature_dim = 3
         elif self.obs_model == "local_comm":
-            neighbour_feature_dim = 4  # dist, bearing, relative orientation, neighbour size
-            local_feature_dim = 3  # distance to wall, bearing to wall, own neighbourhood size
+            neighbour_feature_dim = 6  # dist, cos(bearing), sin(bearing), cos(ori), sin(ori), neighbour size
+            local_feature_dim = 4  # distance to wall, cos(bearing to wall), sin(bearing to wall), own neighbourhood size
         else:
             raise ValueError(f"Unknown observation model: {self.obs_model}")
 
@@ -148,18 +155,20 @@ class RendezvousEnv(BaseEnv):
 
         # Build bounds with normalized values
         # All distances and counts normalized to [0, 1]
-        # Bearings in [-π, π]
+        # Bearings and orientations represented as (cos, sin) pairs in [-1, 1]
         low = -np.inf * np.ones(self.obs_total_dim, dtype=np.float32)
         high = np.inf * np.ones(self.obs_total_dim, dtype=np.float32)
 
-        # Local features: [wall_dist, wall_bearing, (own_count)]
+        # Local features: [wall_dist, wall_bearing_cos, wall_bearing_sin, (own_count)]
         low[0] = 0.0  # wall distance (normalized)
         high[0] = 1.0
-        low[1] = -np.pi  # wall bearing
-        high[1] = np.pi
-        if local_feature_dim == 3:  # local_comm has own neighborhood count
-            low[2] = 0.0
-            high[2] = 1.0
+        low[1] = -1.0  # cos(wall_bearing)
+        high[1] = 1.0
+        low[2] = -1.0  # sin(wall_bearing)
+        high[2] = 1.0
+        if local_feature_dim == 4:  # local_comm has own neighborhood count
+            low[3] = 0.0
+            high[3] = 1.0
 
         # Neighbor features repeated max_neighbours times
         for i in range(self._max_neighbours):
@@ -167,35 +176,49 @@ class RendezvousEnv(BaseEnv):
             if self.obs_model in {"global_basic", "local_basic"}:
                 low[offset] = 0.0  # distance (normalized)
                 high[offset] = 1.0
-                low[offset + 1] = -np.pi  # bearing
-                high[offset + 1] = np.pi
+                low[offset + 1] = -1.0  # cos(bearing)
+                high[offset + 1] = 1.0
+                low[offset + 2] = -1.0  # sin(bearing)
+                high[offset + 2] = 1.0
             elif self.obs_model in {"local_extended"}:
                 low[offset] = 0.0  # distance (normalized)
                 high[offset] = 1.0
-                low[offset + 1] = -np.pi  # bearing
-                high[offset + 1] = np.pi
-                low[offset + 2] = -np.pi  # relative orientation
-                high[offset + 2] = np.pi
+                low[offset + 1] = -1.0  # cos(bearing)
+                high[offset + 1] = 1.0
+                low[offset + 2] = -1.0  # sin(bearing)
+                high[offset + 2] = 1.0
+                low[offset + 3] = -1.0  # cos(relative orientation)
+                high[offset + 3] = 1.0
+                low[offset + 4] = -1.0  # sin(relative orientation)
+                high[offset + 4] = 1.0
             elif self.obs_model == "local_comm":
                 low[offset] = 0.0  # distance (normalized)
                 high[offset] = 1.0
-                low[offset + 1] = -np.pi  # bearing
-                high[offset + 1] = np.pi
-                low[offset + 2] = -np.pi  # relative orientation
-                high[offset + 2] = np.pi
-                low[offset + 3] = 0.0  # neighbor count (normalized)
+                low[offset + 1] = -1.0  # cos(bearing)
+                high[offset + 1] = 1.0
+                low[offset + 2] = -1.0  # sin(bearing)
+                high[offset + 2] = 1.0
+                low[offset + 3] = -1.0  # cos(relative orientation)
                 high[offset + 3] = 1.0
+                low[offset + 4] = -1.0  # sin(relative orientation)
+                high[offset + 4] = 1.0
+                low[offset + 5] = 0.0  # neighbor count (normalized)
+                high[offset + 5] = 1.0
             elif self.obs_model == "global_extended":
                 low[offset] = 0.0  # distance (normalized)
                 high[offset] = 1.0
-                low[offset + 1] = -np.pi  # bearing
-                high[offset + 1] = np.pi
-                low[offset + 2] = -np.pi  # relative orientation
-                high[offset + 2] = np.pi
-                low[offset + 3] = -1.0  # relative velocity x (normalized)
+                low[offset + 1] = -1.0  # cos(bearing)
+                high[offset + 1] = 1.0
+                low[offset + 2] = -1.0  # sin(bearing)
+                high[offset + 2] = 1.0
+                low[offset + 3] = -1.0  # cos(relative orientation)
                 high[offset + 3] = 1.0
-                low[offset + 4] = -1.0  # relative velocity y (normalized)
+                low[offset + 4] = -1.0  # sin(relative orientation)
                 high[offset + 4] = 1.0
+                low[offset + 5] = -1.0  # relative velocity x (normalized)
+                high[offset + 5] = 1.0
+                low[offset + 6] = -1.0  # relative velocity y (normalized)
+                high[offset + 6] = 1.0
 
         # Mask entries in [0, 1]
         mask_start = local_feature_dim + self._max_neighbours * neighbour_feature_dim
@@ -222,7 +245,38 @@ class RendezvousEnv(BaseEnv):
     # ------------------------------------------------------------------
     def _reset_agents(self) -> None:
         """Reset agents to random positions and zero velocities."""
-        self.agent_handler.initialize_random_positions(self.world_size)
+        self.agent_handler.initialize_random_positions(self.world_size, rng=self._rng)
+
+    def _compute_and_cache_distance_matrix(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Compute pairwise distances and displacements, cache them for this step.
+
+        Returns
+        -------
+        distances : np.ndarray
+            Pairwise distance matrix of shape (n, n)
+        diff : np.ndarray
+            Pairwise displacement matrix of shape (n, n, 2)
+        """
+        positions = self.agent_handler.positions
+        n = len(positions)
+
+        # Compute all pairwise displacements: shape (n, n, 2)
+        diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
+
+        # Apply torus wrapping if enabled
+        if self.torus:
+            half = self.world_size / 2.0
+            diff = np.where(diff > half, diff - self.world_size, diff)
+            diff = np.where(diff < -half, diff + self.world_size, diff)
+
+        # Compute all pairwise distances: shape (n, n)
+        distances = np.linalg.norm(diff, axis=2)
+
+        # Cache for reuse in this step
+        self._cached_distances = distances
+        self._cached_diff = diff
+
+        return distances, diff
 
     def delta(self, pos_i: np.ndarray, pos_j: np.ndarray) -> np.ndarray:
         """Compute minimal displacement from pos_i to pos_j (torus aware)."""
@@ -272,21 +326,10 @@ class RendezvousEnv(BaseEnv):
         contribution proportional to the magnitude of the agents' actions
         discourages unnecessarily large control inputs.
         """
-        # Sum of clipped distances (vectorized for performance)
-        positions = self.agent_handler.positions
-        n = len(positions)
-
-        # Compute all pairwise displacements: shape (n, n, 2)
-        diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
-
-        # Apply torus wrapping if enabled
-        if self.torus:
-            half = self.world_size / 2.0
-            diff = np.where(diff > half, diff - self.world_size, diff)
-            diff = np.where(diff < -half, diff + self.world_size, diff)
-
-        # Compute all pairwise distances: shape (n, n)
-        distances = np.linalg.norm(diff, axis=2)
+        # Use cached distance matrix (computed once in _intermediate_steps)
+        assert self._cached_distances is not None, "Distance matrix not cached!"
+        distances = self._cached_distances
+        n = len(distances)
 
         # Extract upper triangle (avoid double-counting and self-distances)
         upper_tri_indices = np.triu_indices(n, k=1)
@@ -297,13 +340,12 @@ class RendezvousEnv(BaseEnv):
         total_distance = np.sum(clipped_dists)
         reward_distance = self.alpha * total_distance
 
-        # Action penalty
+        # Action penalty (vectorized)
         reward_action = 0.0
         if actions is not None:
-            for act in actions.values():
-                arr = np.asarray(act, dtype=np.float32)
-                reward_action += np.linalg.norm(arr)
-            reward_action *= self.beta
+            action_array = np.array([actions[agent] for agent in self.agent_names], dtype=np.float32)
+            action_norms = np.linalg.norm(action_array, axis=1)
+            reward_action = self.beta * np.sum(action_norms)
 
         total_reward = reward_distance + reward_action
         return {name: float(total_reward) for name in self.agent_names}
@@ -320,24 +362,9 @@ class RendezvousEnv(BaseEnv):
         terminations = {name: False for name in self.agent_names}
 
         if self.break_distance_threshold is not None:
-            # Vectorized computation of maximum pairwise distance
-            positions = self.agent_handler.positions
-            n = len(positions)
-
-            if self.torus:
-                # Compute all pairwise displacements (torus-aware)
-                # Shape: (n, n, 2)
-                diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
-                # Apply torus wrapping
-                half = self.world_size / 2.0
-                diff = np.where(diff > half, diff - self.world_size, diff)
-                diff = np.where(diff < -half, diff + self.world_size, diff)
-            else:
-                # Simple Euclidean displacement
-                diff = positions[:, np.newaxis, :] - positions[np.newaxis, :, :]
-
-            # Compute all pairwise distances: shape (n, n)
-            distances = np.linalg.norm(diff, axis=2)
+            # Use cached distance matrix (computed once in _intermediate_steps)
+            assert self._cached_distances is not None, "Distance matrix not cached!"
+            distances = self._cached_distances
             # Maximum pairwise distance (ignoring diagonal self-distances)
             max_pairwise = np.max(distances)
 
@@ -355,28 +382,40 @@ class RendezvousEnv(BaseEnv):
     # Info and intermediate steps
     # ------------------------------------------------------------------
     def _get_infos(self) -> Dict[str, dict]:
-        """Provide diagnostic information: distance to COM and max pairwise distance."""
+        """Provide diagnostic information: distance to COM, max pairwise distance, and task success metrics."""
         infos: Dict[str, dict] = {}
         positions = self.agent_handler.positions
         mean_pos = np.mean(positions, axis=0)
         dists = np.linalg.norm(positions - mean_pos, axis=1)
-        # Compute maximum pairwise distance
-        max_pairwise = 0.0
-        for i in range(len(self.agent_names)):
-            for j in range(i + 1, len(self.agent_names)):
-                d = np.linalg.norm(self.delta(positions[i], positions[j]))
-                if d > max_pairwise:
-                    max_pairwise = d
+
+        # Use cached distance matrix for maximum pairwise distance (computed once in _intermediate_steps)
+        assert self._cached_distances is not None, "Distance matrix not cached!"
+        max_pairwise = float(np.max(self._cached_distances))
+
+        # Compute convergence velocity: rate of decrease in max_pairwise_distance
+        convergence_velocity = 0.0
+        if hasattr(self, "_prev_max_pairwise"):
+            dt = self.agent_handler.dt
+            convergence_velocity = (self._prev_max_pairwise - max_pairwise) / dt if dt > 0 else 0.0
+        self._prev_max_pairwise = max_pairwise
+
+        # Task success: did we achieve rendezvous below threshold?
+        task_success = False
+        if self.break_distance_threshold is not None:
+            task_success = max_pairwise < self.break_distance_threshold
+
         for idx, name in enumerate(self.agent_names):
             infos[name] = {
                 "distance_to_com": float(dists[idx]),
-                "max_pairwise_distance": float(max_pairwise),
+                "max_pairwise_distance": max_pairwise,
+                "convergence_velocity": convergence_velocity,
+                "task_success": task_success,
             }
         return infos
 
     def _intermediate_steps(self) -> None:
-        """No intermediate processing required."""
-        return None
+        """Compute and cache distance matrix for reuse in rewards, terminations, and infos."""
+        self._compute_and_cache_distance_matrix()
 
     # ------------------------------------------------------------------
     # Rendering

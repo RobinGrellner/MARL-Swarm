@@ -1,0 +1,88 @@
+{
+  "metadata": {
+    "experiment_name": "environmental_robustness",
+    "version": "2.0",
+    "description": "Experiment 3: Environmental Robustness (Tertiary). Test interaction between embedding_dim and communication sparsity/observation models.",
+    "thesis_chapter": "4.4 - Robustness of Mean Embedding Scaling",
+    "task": "Rendezvous (and Pursuit-Evasion variant)",
+    "created": "2026-01-24",
+    "estimated_total_runs": 162,
+    "estimated_runtime_hours": 324
+  },
+
+  "defaults": {
+    "env_config": {
+      "num_agents": 16,
+      "world_size": 10.0,
+      "torus": false,
+      "kinematics": "single",
+      "v_max": 1.0,
+      "omega_max": 1.0,
+      "max_agents": 200
+    },
+    "train_config": {
+      "activation": "relu",
+      "aggregation": "mean",
+      "phi_layers": 1,
+      "algorithm": "ppo",
+      "total_timesteps": 2000000,
+      "learning_rate": 0.0003,
+      "verbose": 1
+    }
+  },
+
+  "matrix_parameters": {
+    "description": "Test interaction: 3 embed_dims x 3 comm_radius x 3 obs_models x 2 topologies = 54 unique configs. Each run 3 times with different seeds. Total: 162 runs.",
+    "embed_dims": [8, 32, 128],
+    "comm_radius": [2.0, 8.0, 12.0],
+    "obs_models": ["local_basic", "local_comm", "global_extended"],
+    "topologies": ["flat", "torus"],
+    "seeds": [0, 123, 456]
+  },
+
+  "hypothesis": {
+    "primary": "Does sparse communication (small comm_radius) require larger embedding dimensions to capture neighbor uncertainty?",
+    "secondary": "Is the optimal embedding dimension robust to observation model and topology variations?"
+  },
+
+  "experiments": {
+    "robust_embed8_comm2_local_basic_flat_seed0": {
+      "description": "embed=8, comm_radius=2.0 (sparse), local_basic obs, flat topology, seed=0",
+      "env_config": {
+        "obs_model": "local_basic",
+        "comm_radius": 2.0,
+        "torus": false
+      },
+      "train_config": {
+        "embed_dim": 8,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "robust_embed8_comm2_local_basic_torus_seed0": {
+      "description": "embed=8, comm_radius=2.0 (sparse), local_basic obs, torus topology, seed=0",
+      "env_config": {
+        "obs_model": "local_basic",
+        "comm_radius": 2.0,
+        "torus": true
+      },
+      "train_config": {
+        "embed_dim": 8,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "_comment": "Framework shown above. Full config would have: 3 embed_dims × 3 comm_radius × 3 obs_models × 2 topologies × 3 seeds = 162 total configurations. Naming convention: robust_embed{D}_comm{R}_obs{O}_topo{T}_seed{S}"
+  },
+
+  "generation_script_pseudocode": "
+  for embed_dim in [8, 32, 128]:
+    for comm_radius in [2.0, 8.0, 12.0]:
+      for obs_model in ['local_basic', 'local_comm', 'global_extended']:
+        for topology in ['flat', 'torus']:
+          for seed in [0, 123, 456]:
+            config_name = f'robust_embed{embed_dim}_comm{comm_radius}_obs{obs_model}_topo{topology}_seed{seed}'
+            policy_layers = [max(64, embed_dim), max(64, embed_dim)]
+            create_experiment(config_name, embed_dim, comm_radius, obs_model, topology, seed, policy_layers)
+  "
+}

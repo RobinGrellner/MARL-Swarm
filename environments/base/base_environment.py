@@ -38,9 +38,11 @@ class BaseEnv(ABC, ParallelEnv):
     acc_v_max: float
         Maximum allowed acceleration for linear velocity in double integrator kinematics.
     acc_omega_max: float
-        Maximum allowed acceleration for anguar velocity in double integrator kinematics.
+        Maximum allowed acceleration for angular velocity in double integrator kinematics.
     max_steps: int
         Maximum allowed steps. After this many steps, the Environment automatically terminates and the episode ends.
+    dt: float, optional
+        Time step for physics integration. Default is 0.1 seconds.
     """
 
     def __init__(
@@ -56,6 +58,7 @@ class BaseEnv(ABC, ParallelEnv):
         acc_omega_max: float = 1.0,
         max_steps: int = 1000,
         render_mode: Optional[str] = None,
+        dt: float = 0.1,
     ) -> None:
         super().__init__()
 
@@ -67,6 +70,7 @@ class BaseEnv(ABC, ParallelEnv):
             omega_max=omega_max,
             acc_v_max=acc_v_max,
             acc_omega_max=acc_omega_max,
+            dt=dt,
         )
 
         # Setting up Necessary Environment variables
@@ -77,6 +81,10 @@ class BaseEnv(ABC, ParallelEnv):
         self.torus = torus
         self.world_size = world_size
         self.render_mode = render_mode
+
+        # Random number generator (local state instead of global)
+        self._rng = np.random.default_rng()
+
         self._setup_spaces()
 
     @property
@@ -105,13 +113,15 @@ class BaseEnv(ABC, ParallelEnv):
         - Velocities are set to zero
         - Step counter is cleared
         """
-        # Common resets
+        # Use local RNG for reproducibility without affecting global state
         if seed is not None:
-            np.random.seed(seed)
+            self._rng = np.random.default_rng(seed)
+
         self.step_count = 0
 
         # Specific resets
         self._reset_agents()
+        self._intermediate_steps()
         # All Agents are active at the Beginning of the episode
         self.agents = list(self.agent_names)
         return self._get_observations(), self._get_infos()
@@ -151,13 +161,13 @@ class BaseEnv(ABC, ParallelEnv):
         """Template method for handling the shutdown of the environment."""
         self._close()
 
-    def _update_agents(self, actions):
+    def _update_agents(self, actions: Dict[str, np.ndarray]) -> None:
         """Move the agents in the world according to the passed actions.
 
         Parameters
         ----------
-        acttions : dict
-            Mapping from agent to an 2D-action-vector.
+        actions : dict
+            Mapping from agent to a 2D-action-vector.
         """
         self.agent_handler.move(actions)
 
@@ -167,25 +177,15 @@ class BaseEnv(ABC, ParallelEnv):
             self.agent_handler.positions = np.clip(self.agent_handler.positions, 0.0, self.world_size)
 
     def _setup_spaces(self):
-        """Setup of shared action and observation spaces"""
-        if self.agent_handler.kinematics == "single":
-            low = np.array(
-                [-self.agent_handler.v_max, -self.agent_handler.omega_max],
-                dtype=np.float32,
-            )
-            high = np.array(
-                [self.agent_handler.v_max, self.agent_handler.omega_max],
-                dtype=np.float32,
-            )
-        else:
-            low = np.array(
-                [-self.agent_handler.acc_v_max, -self.agent_handler.acc_omega_max],
-                dtype=np.float32,
-            )
-            high = np.array(
-                [self.agent_handler.acc_v_max, self.agent_handler.acc_omega_max],
-                dtype=np.float32,
-            )
+        """Setup of shared action and observation spaces.
+
+        Action space is normalized to [-1, 1] for both dimensions.
+        Scaling to physical units (v_max, omega_max, etc.) is handled in AgentHandler._clean_actions.
+        """
+        # Normalized action space [-1, 1] for both single and double integrator
+        # Physical scaling happens in AgentHandler._clean_actions
+        low = np.array([-1.0, -1.0], dtype=np.float32)
+        high = np.array([1.0, 1.0], dtype=np.float32)
 
         self._action_space: Dict[str, spaces.Box] = {
             agent: spaces.Box(low=low, high=high, shape=(2,), dtype=np.float32) for agent in self.agent_handler.agents

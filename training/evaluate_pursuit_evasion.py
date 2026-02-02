@@ -11,6 +11,7 @@ from pathlib import Path
 
 import numpy as np
 from stable_baselines3 import PPO
+from sb3_contrib import TRPO
 
 from environments.pursuit.pursuit_evasion_env import PursuitEvasionEnv
 
@@ -28,6 +29,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-steps", type=int, default=100, help="Maximum steps per episode")
     parser.add_argument("--capture-radius", type=float, default=0.5, help="Capture distance threshold")
     parser.add_argument("--evader-speed", type=float, default=1.0, help="Evader speed")
+    parser.add_argument("--v-max", type=float, default=1.0, help="Maximum linear velocity for pursuers")
+    parser.add_argument("--omega-max", type=float, default=1.0, help="Maximum angular velocity for pursuers")
+    parser.add_argument("--max-pursuers", type=int, default=None, help="Maximum number of pursuers for scale invariance")
     parser.add_argument(
         "--obs-model",
         type=str,
@@ -39,11 +43,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--evader-strategy",
         type=str,
-        default="voronoi_center",
-        choices=["simple", "max_min_distance", "weighted_escape", "voronoi_center"],
+        default="huttenrauch",
+        choices=["simple", "max_min_distance", "weighted_escape", "voronoi_center", "huttenrauch"],
         help="Evader evasion strategy",
     )
     parser.add_argument("--kinematics", type=str, default="single", choices=["single", "double"], help="Agent kinematics")
+    parser.add_argument("--torus", action="store_true", help="Use toroidal world topology (wraparound)")
 
     # Evaluation parameters
     parser.add_argument("--n-episodes", type=int, default=5, help="Number of episodes to run")
@@ -60,15 +65,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_model(model_path: str) -> PPO:
-    """Load a trained model."""
+def load_model(model_path: str):
+    """Load a trained model (PPO or TRPO)."""
     model_path = Path(model_path)
     if not model_path.exists():
         raise FileNotFoundError(f"Model not found: {model_path}")
 
     print(f"Loading model from {model_path}...")
-    model = PPO.load(model_path)
-    print("✓ Model loaded successfully\n")
+    try:
+        # Try loading as TRPO first (common for baseline)
+        model = TRPO.load(model_path)
+        print("[OK] Model loaded as TRPO\n")
+    except Exception:
+        # Fallback to PPO
+        model = PPO.load(model_path)
+        print("[OK] Model loaded as PPO\n")
+
     return model
 
 
@@ -87,12 +99,12 @@ def evaluate_episode(
     min_distances = []
 
     while True:
-        # Get actions from model
-        actions = {}
-        for agent in env.agents:
-            agent_obs = obs[agent]
-            action, _ = model.predict(agent_obs[np.newaxis, :], deterministic=deterministic)
-            actions[agent] = action[0]
+        # Get actions from model using batched prediction (optimization for parameter sharing)
+        # Stack all agent observations for efficient inference
+        agent_list = list(env.agents)
+        obs_batch = np.stack([obs[agent] for agent in agent_list])  # (num_agents, obs_dim)
+        actions_batch, _ = model.predict(obs_batch, deterministic=deterministic)
+        actions = dict(zip(agent_list, actions_batch))
 
         # Step environment
         obs, rewards, terminations, truncations, infos = env.step(actions)
@@ -140,6 +152,9 @@ def main() -> None:
     print(f"Model: {args.model_path}")
     print(f"Pursuers: {args.num_pursuers}")
     print(f"World Size: {args.world_size}")
+    print(f"Evader Speed: {args.evader_speed}")
+    print(f"V Max: {args.v_max}")
+    print(f"Omega Max: {args.omega_max}")
     print(f"Observation Model: {args.obs_model}")
     print(f"Evader Strategy: {args.evader_strategy}")
     print(f"Episodes: {args.n_episodes}")
@@ -158,10 +173,14 @@ def main() -> None:
             max_steps=args.max_steps,
             capture_radius=args.capture_radius,
             evader_speed=args.evader_speed,
+            v_max=args.v_max,
+            omega_max=args.omega_max,
+            max_pursuers=args.max_pursuers,
             obs_model=args.obs_model,
             comm_radius=args.comm_radius,
             evader_strategy=args.evader_strategy,
             kinematics=args.kinematics,
+            torus=args.torus,
             render_mode=args.render_mode,
             fps=args.fps,
         )

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import argparse
-import os
+from datetime import datetime
 
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 from training.rendezvous_train_utils import run_training_rendezvous
+from training.common_train_utils import add_common_training_args, build_algo_params, build_embed_config
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command‑line arguments for the training script."""
+    """Parse command-line arguments for the training script."""
     parser = argparse.ArgumentParser(description="Train an RL agent on the Rendezvous environment")
 
     # Environment parameters
@@ -43,22 +44,12 @@ def parse_args() -> argparse.Namespace:
         help="Maximum number of agents to size the observation space for scale invariance",
     )
 
-    # Training parameters
-    parser.add_argument("--algorithm", type=str, default="ppo", choices=["ppo", "trpo"], help="RL algorithm to use")
-    parser.add_argument(
-        "--total-timesteps", type=int, default=200_000, help="Total number of environment steps for training"
-    )
-    parser.add_argument(
-        "--learning-rate", type=float, default=None, help="Learning rate (defaults: PPO=3e-4, TRPO=1e-3)"
-    )
-    parser.add_argument("--num-vec-envs", type=int, default=8, help="Number of parallel environments")
-    parser.add_argument("--n-steps", type=int, default=None, help="Rollout length (defaults: PPO=1024, TRPO=2048)")
-    parser.add_argument("--batch-size", type=int, default=None, help="Minibatch size (defaults: PPO=512, TRPO=128)")
-    parser.add_argument("--n-epochs", type=int, default=None, help="Number of epochs (PPO only, default=5)")
-    parser.add_argument("--model-path", type=str, default="rendezvous_model.zip", help="File to save the trained model")
-    parser.add_argument("--resume-from", type=str, default=None, help="Path to a saved model to resume training from")
-    parser.add_argument("--tensorboard-log", type=str, default=None, help="TensorBoard log directory")
-    parser.add_argument("--use-cuda", action="store_true", help="Use CUDA/GPU for training (default: CPU)")
+    # Common training and architecture parameters (shared across all scripts)
+    add_common_training_args(parser)
+
+    # Override default model path for rendezvous with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    parser.set_defaults(model_path=f"models/rv_{timestamp}.zip")
 
     return parser.parse_args()
 
@@ -81,27 +72,9 @@ def main() -> None:
         max_agents=args.max_agents,
     )
 
-    # Build algorithm parameters from CLI args
-    algo_params = {"verbose": 1}
-    if args.learning_rate is not None:
-        algo_params["learning_rate"] = args.learning_rate
-    if args.n_steps is not None:
-        algo_params["n_steps"] = args.n_steps
-    if args.batch_size is not None:
-        algo_params["batch_size"] = args.batch_size
-    if args.n_epochs is not None and args.algorithm == "ppo":
-        algo_params["n_epochs"] = args.n_epochs
-    if args.tensorboard_log is not None:
-        algo_params["tensorboard_log"] = args.tensorboard_log
-
-    # Set device (default to CPU, use CUDA only if explicitly requested)
-    algo_params["device"] = "cuda" if args.use_cuda else "cpu"
-
-    # Embedding configuration
-    embed_config = {
-        "embed_dim": 64,
-        "phi_layers": 1,
-    }
+    # Build algorithm parameters and embedding configuration from CLI args
+    algo_params = build_algo_params(args, args.algorithm)
+    embed_config = build_embed_config(args)
 
     print(f"\n{'=' * 60}")
     print(f"Training {args.algorithm.upper()} on Rendezvous Environment")
@@ -111,6 +84,13 @@ def main() -> None:
     print(f"Observation Model: {args.obs_model}")
     print(f"Total Timesteps: {args.total_timesteps:,}")
     print(f"Parallel Envs: {args.num_vec_envs}")
+    print(f"{'=' * 60}")
+    print(f"Architecture Configuration:")
+    print(f"  Activation: {args.activation}")
+    print(f"  Aggregation: {args.aggregation}")
+    print(f"  Policy Layers: {args.policy_layers}")
+    print(f"  Embed Dim: {args.embed_dim}")
+    print(f"  Phi Layers: {args.phi_layers}")
     print(f"{'=' * 60}\n")
 
     # Train model using utility function
