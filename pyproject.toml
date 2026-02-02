@@ -97,6 +97,14 @@ ignore = [
 known-first-party = ["environments", "policies", "training", "evaluation"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",

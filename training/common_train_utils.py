@@ -99,6 +99,99 @@ class MALRMetricsCallback(BaseCallback):
         return True
 
 
+class IterationCounterCallback(BaseCallback):
+    """Callback to log training metrics with iteration as the x-axis step.
+
+    SB3 on-policy algorithms call ``_on_rollout_end()`` once per iteration
+    (after collecting a rollout and before the policy update).  This callback:
+
+    1. Logs ``train/iteration`` via the standard SB3 logger (x-axis = timesteps).
+    2. Writes ``by_iter/<metric>`` scalars to the **same** TensorBoard writer
+       that SB3 uses, but with ``global_step=iteration``.  In TensorBoard the
+       ``by_iter/`` group gives iteration-based x-axes while the standard
+       metrics keep timestep-based x-axes — all in one log directory.
+
+    Timing note: ``_on_rollout_end`` fires *before* SB3 records rollout and
+    train metrics, so rollout stats are computed directly from the episode
+    buffer, and train metrics from the previous iteration are captured during
+    ``_on_step``.
+    """
+
+    # Metrics to snapshot from name_to_value (captured one iteration behind).
+    _SNAPSHOT_METRICS = (
+        # SB3 train metrics
+        "train/explained_variance",
+        "train/value_loss",
+        "train/policy_objective",
+        "train/kl_divergence_loss",
+        "train/is_line_search_success",
+        "train/learning_rate",
+        "train/n_updates",
+        "train/std",
+        # MALRMetricsCallback custom metrics (ep_rew_std/ep_len_std already
+        # computed directly from episode buffer in _on_rollout_end)
+        "rollout/ep_rew_mean_rolling",
+        "rollout/ep_len_mean_rolling",
+        "task/success_rate",
+        "task/convergence_velocity_mean",
+        "task/capture_time_mean",
+    )
+
+    def __init__(self, verbose: int = 0):
+        super().__init__(verbose)
+        self.iteration = 0
+        self._writer = None  # Resolved lazily from SB3 logger
+        self._prev_train_metrics = {}  # Metrics snapshotted from previous iteration
+
+    def _get_writer(self):
+        """Get the SummaryWriter from SB3's TensorBoard output format."""
+        if self._writer is not None:
+            return self._writer
+        from stable_baselines3.common.logger import TensorBoardOutputFormat
+        for fmt in self.logger.output_formats:
+            if isinstance(fmt, TensorBoardOutputFormat):
+                self._writer = fmt.writer
+                return self._writer
+        return None
+
+    def _on_step(self) -> bool:
+        """Snapshot metrics after they've been recorded by train()/callbacks."""
+        # After the first rollout+train cycle, name_to_value briefly holds
+        # values before dump() clears them.  Capture any we see.
+        for key in self._SNAPSHOT_METRICS:
+            val = self.logger.name_to_value.get(key)
+            if val is not None:
+                self._prev_train_metrics[key] = val
+        return True
+
+    def _on_rollout_end(self) -> None:
+        self.iteration += 1
+        # Standard log (x-axis = timesteps)
+        self.logger.record("train/iteration", self.iteration)
+
+        writer = self._get_writer()
+        if writer is None:
+            return
+
+        # --- Rollout metrics: compute directly from episode buffer ---
+        from stable_baselines3.common.utils import safe_mean
+        if len(self.model.ep_info_buffer) > 0:
+            rewards = [ep["r"] for ep in self.model.ep_info_buffer]
+            lengths = [ep["l"] for ep in self.model.ep_info_buffer]
+            writer.add_scalar("by_iter/rollout/ep_rew_mean", safe_mean(rewards), global_step=self.iteration)
+            writer.add_scalar("by_iter/rollout/ep_len_mean", safe_mean(lengths), global_step=self.iteration)
+            if len(rewards) > 1:
+                writer.add_scalar("by_iter/rollout/ep_rew_std", float(np.std(rewards)), global_step=self.iteration)
+                writer.add_scalar("by_iter/rollout/ep_len_std", float(np.std(lengths)), global_step=self.iteration)
+
+        # --- Snapshotted metrics: write values captured from previous iteration ---
+        for key, val in self._prev_train_metrics.items():
+            writer.add_scalar(f"by_iter/{key}", val, global_step=self.iteration)
+        self._prev_train_metrics.clear()
+
+        writer.flush()
+
+
 class CheckpointCallback(BaseCallback):
     """Callback for saving model checkpoints periodically during training.
 
@@ -576,6 +669,7 @@ def run_training(
     from stable_baselines3.common.callbacks import CallbackList
 
     metrics_callback = MALRMetricsCallback(verbose=0)
+    iteration_callback = IterationCounterCallback(verbose=0)
 
     # Create checkpoint callback with automatic directory naming
     import os
@@ -583,7 +677,7 @@ def run_training(
     os.makedirs(checkpoint_dir, exist_ok=True)
     checkpoint_callback = CheckpointCallback(save_freq=1_000_000, save_path=checkpoint_dir, verbose=1)
 
-    callbacks = CallbackList([metrics_callback, checkpoint_callback])
+    callbacks = CallbackList([metrics_callback, iteration_callback, checkpoint_callback])
 
     # 7. Train model with callbacks
     model.learn(total_timesteps=total_timesteps, callback=callbacks)

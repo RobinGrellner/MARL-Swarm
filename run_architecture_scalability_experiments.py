@@ -60,6 +60,7 @@ class ArchitectureScalabilityRunner:
         train_script: str = "training/train_rendezvous.py",
         use_cuda: bool = False,
         num_parallel_experiments: int = 1,
+        model_dir: Optional[str] = None,
     ):
         self.config_path = Path(config_path)
         self.tensorboard_log = tensorboard_log or "logs/architecture_scalability"
@@ -69,6 +70,7 @@ class ArchitectureScalabilityRunner:
         self.train_script = train_script
         self.use_cuda = use_cuda
         self.num_parallel_experiments = num_parallel_experiments
+        self.model_dir = model_dir or "models"
 
         # Load config and expand matrix parameters
         self.config = load_and_expand_config(str(self.config_path))
@@ -134,8 +136,13 @@ class ArchitectureScalabilityRunner:
         n_steps = train_config.get("n_steps", None)
         batch_size = train_config.get("batch_size", None)
 
-        # Use config timesteps if available, otherwise use runner default
-        total_timesteps = train_config.get("total_timesteps", self.total_timesteps)
+        # Compute total_timesteps from n_iterations if specified, otherwise fall back
+        n_iterations = train_config.get("n_iterations", None)
+        if n_iterations is not None:
+            n_steps_val = n_steps if n_steps is not None else 500
+            total_timesteps = n_iterations * n_steps_val * num_agents * self.num_vec_envs
+        else:
+            total_timesteps = train_config.get("total_timesteps", self.total_timesteps)
 
         # Extract environment parameters for scale invariance
         max_pursuers = env_config.get("max_pursuers", None)
@@ -144,7 +151,7 @@ class ArchitectureScalabilityRunner:
         policy_layers_str = ",".join(str(x) for x in policy_layers) if policy_layers is not None else None
 
         # Build model path
-        model_path = f"models/architecture_scalability_{exp_name}.zip"
+        model_path = f"{self.model_dir}/{exp_name}.zip"
 
         # Build log path
         log_path = f"{self.tensorboard_log}/{exp_name}"
@@ -195,9 +202,14 @@ class ArchitectureScalabilityRunner:
         if policy_layers_str is not None:
             cmd.extend(["--policy-layers", policy_layers_str])
 
-        # Add max_pursuers for scale invariance if specified
+        # Add max_pursuers for scale invariance if specified (PE)
         if max_pursuers is not None:
             cmd.extend(["--max-pursuers", str(max_pursuers)])
+
+        # Add max_agents for scale invariance if specified (Rendezvous)
+        max_agents = env_config.get("max_agents", None)
+        if max_agents is not None:
+            cmd.extend(["--max-agents", str(max_agents)])
 
         # Add comm-radius if explicitly specified (None means use env defaults: world_size for global, 8.0 for local)
         if comm_radius is not None:
@@ -317,7 +329,7 @@ class ArchitectureScalabilityRunner:
             success_rate = (self.completed_experiments / self.total_experiments) * 100
             print(f"Success rate: {success_rate:.1f}%")
         print(f"\nTensorBoard logs: {self.tensorboard_log}")
-        print(f"Models saved to: models/architecture_scalability_*.zip")
+        print(f"Models saved to: {self.model_dir}/")
         print(f"\nTo view training progress:")
         print(f"  tensorboard --logdir {self.tensorboard_log}")
         print(f"{'=' * 80}")
@@ -380,6 +392,12 @@ def main():
         default=1,
         help="Number of experiments to run in parallel (default: 1 = sequential)",
     )
+    parser.add_argument(
+        "--model-dir",
+        type=str,
+        default="models",
+        help="Directory to save trained models (default: models/)",
+    )
 
     args = parser.parse_args()
 
@@ -397,6 +415,7 @@ def main():
         train_script=args.train_script,
         use_cuda=args.use_cuda,
         num_parallel_experiments=args.parallel,
+        model_dir=args.model_dir,
     )
 
     # Print experiment info
@@ -409,6 +428,7 @@ def main():
     print(f"Parallel environments per experiment: {args.num_vec_envs}")
     print(f"Parallel experiments: {args.parallel}")
     print(f"GPU/CUDA enabled: {args.use_cuda}")
+    print(f"Model directory: {args.model_dir}")
     print(f"Timesteps per training: {args.total_timesteps:,}")
     if args.limit:
         print(f"Limit: first {args.limit} experiments only")

@@ -22,14 +22,16 @@
       "v_max": 1.0,
       "omega_max": 1.0,
       "kinematics": "single",
-      "max_pursuers": 200,
+      "max_pursuers": 100,
       "torus": true
     },
     "train_config": {
       "embed_dim": 64,
       "aggregation": "mean",
       "algorithm": "trpo",
-      "total_timesteps": 5000000,
+      "n_steps": 500,
+      "batch_size": 128,
+      "n_iterations": 500,
       "learning_rate": 0.001,
       "verbose": 1
     }

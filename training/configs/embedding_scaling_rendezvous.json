@@ -8,7 +8,7 @@
     "created": "2026-01-24",
     "estimated_total_runs": 70,
     "estimated_runtime_hours": 233,
-    "optimization_notes": "2 seeds, 5M timesteps (reduced from 10M - converges by 2M), n_envs=2, n_steps=4000, batch_size=128. max_steps=1000, world_size=100, v_max=5.0. Global observation (no comm_radius) to isolate dimensional reduction effect. Auto-expanded from matrix_parameters."
+    "optimization_notes": "2 seeds, 500 iterations (n_steps=500, batch_size=128, n_envs=2). max_steps=1000, world_size=100, v_max=5.0. Global observation (no comm_radius) to isolate dimensional reduction effect. Auto-expanded from matrix_parameters."
   },
 
   "defaults": {
@@ -22,16 +22,16 @@
       "kinematics": "single",
       "v_max": 5.0,
       "omega_max": 2.0,
-      "max_agents": 200
+      "max_agents": 100
     },
     "train_config": {
       "activation": "relu",
       "aggregation": "mean",
       "phi_layers": 1,
       "algorithm": "trpo",
-      "n_steps": 4000,
+      "n_steps": 500,
       "batch_size": 128,
-      "total_timesteps": 5000000,
+      "n_iterations": 500,
       "learning_rate": 0.001,
       "verbose": 1
     }
