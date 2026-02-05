@@ -1,20 +1,23 @@
 {
   "metadata": {
-    "experiment_name": "embedding_dimension_scaling_pursuit_evasion",
-    "version": "3.1",
-    "description": "Experiment 1 (Pursuit-Evasion variant): Core thesis - Embedding Dimension x Training Swarm Size matrix on PE task.",
+    "experiment_name": "embedding_dimension_scaling_pursuit_evasion_core",
+    "version": "4.1",
+    "description": "Core thesis experiments (Pursuit-Evasion): Embedding Dimension x Training Swarm Size matrix. Reduced from 70 to 20 configurations. Tests dimensional reduction hypothesis across 4 training sizes and 5 embedding dimensions on PE task.",
     "thesis_chapter": "4.2 - Dimensional Reduction via Mean Embeddings (Task 2)",
     "task": "Pursuit-Evasion",
-    "created": "2026-01-24",
-    "estimated_total_runs": 70,
-    "estimated_runtime_hours": 233,
-    "optimization_notes": "2 seeds, 500 iterations (n_steps=500, batch_size=128, n_envs=2). max_steps=1000, world_size=100, v_max=5.0, evader_speed=10.0, capture_radius=1.0 (harder). Auto-expanded from matrix_parameters."
+    "created": "2026-02-03",
+    "core_runs": 20,
+    "estimated_total_runs": 20,
+    "estimated_runtime_hours_sequential": 150,
+    "estimated_runtime_hours_parallel_3way": "50",
+    "hyperparameter_notes": "Updated: n_steps=256, batch_size=512, n_iterations=500 (was 2M timesteps)",
+    "design_rationale": "Parallel to rendezvous core matrix: [4,16,50,100] pursuers x [4,8,32,64,128] embed dims x 1 seed. Single seed per config; prioritize second seed for highest-variance (large N, small d) if time permits."
   },
 
   "defaults": {
     "env_config": {
       "world_size": 100.0,
-      "max_steps": 1000,
+      "max_steps": 500,
       "obs_model": "global_basic",
       "evader_strategy": "huttenrauch",
       "capture_radius": 1.0,
@@ -30,38 +33,57 @@
       "aggregation": "mean",
       "phi_layers": 1,
       "algorithm": "trpo",
-      "n_steps": 500,
-      "batch_size": 128,
+      "n_steps": 256,
+      "batch_size": 512,
       "n_iterations": 500,
+      "num_vec_envs": 4,
       "learning_rate": 0.001,
       "verbose": 1
     }
   },
 
   "matrix_parameters": {
-    "description": "Cartesian product: 5 training sizes x 7 embedding dimensions x 2 seeds = 70 unique configs. Auto-expanded via config_utils.py.",
-    "num_pursuers": [4, 16, 32, 50, 100],
-    "embed_dim": [4, 8, 16, 32, 64, 128, 256],
-    "seed": [0, 123]
+    "description": "Core matrix: 4 training sizes x 5 embedding dimensions x 1 seed = 20 unique configs. Auto-expanded via config_utils.py.",
+    "num_pursuers": [4, 16, 50, 100],
+    "embed_dim": [4, 8, 32, 64, 128],
+    "seed": [0]
+  },
+
+  "design_notes": {
+    "pursuer_count_selection": {
+      "description": "Pursuer counts [4, 16, 50, 100] parallel to rendezvous core matrix for cross-task comparison.",
+      "reasoning": [
+        "Matching agent counts enables direct comparison between rendezvous and PE tasks.",
+        "Logarithmic spacing: 4x, 3x, 2x gaps across 25x range.",
+        "Dropped N=32 for efficiency (intermediate value without qualitative novelty)."
+      ]
+    },
+    "embed_dim_selection": {
+      "description": "Same embedding dimension range as rendezvous core for consistent thesis narrative.",
+      "reasoning": [
+        "d=[4,8,32,64,128] tests information bottleneck through saturation regime.",
+        "d=64 enables baseline comparison across tasks."
+      ]
+    },
+    "seed_strategy": {
+      "description": "Core uses single seed; prioritize second seed for high-variance PE configs if time permits.",
+      "core_seed": 0,
+      "extension_seeds": [123],
+      "note": "PE task typically has higher variance than rendezvous (more dynamic evader), so second seed may be especially valuable."
+    }
   },
 
   "experiments": {
     "_example_num_pursuers4_embed_dim4_seed0": {
-      "description": "Example: 4 pursuers, embed_dim=4, seed=0. Policy width auto-scales with embed_dim.",
+      "description": "Minimal pursuer team, bottleneck embedding. Tests lower bound of mean embedding on PE.",
       "env_config": { "num_pursuers": 4 },
-      "train_config": {
-        "embed_dim": 4,
-        "seed": 0
-      }
+      "train_config": { "embed_dim": 4, "seed": 0 }
     },
-    "_example_num_pursuers16_embed_dim64_seed123": {
-      "description": "Example: 16 pursuers, embed_dim=64, seed=123. Policy width auto-scales with embed_dim.",
-      "env_config": { "num_pursuers": 16 },
-      "train_config": {
-        "embed_dim": 64,
-        "seed": 123
-      }
+    "_example_num_pursuers100_embed_dim128_seed0": {
+      "description": "Large pursuer team, high-dimensional embedding. Tests scalability at maximum scale on PE.",
+      "env_config": { "num_pursuers": 100 },
+      "train_config": { "embed_dim": 128, "seed": 0 }
     },
-    "_abbreviated": "Full 70 configs auto-generated from matrix_parameters by config_utils.py. Naming: num_pursuers{N}_embed_dim{D}_seed{S}"
+    "_abbreviated": "Full 20 core configs auto-generated from matrix_parameters by config_utils.py. Naming: num_pursuers{N}_embed_dim{D}_seed{S}."
   }
 }

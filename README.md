@@ -569,7 +569,7 @@ Tests how optimal embedding dimension scales with training swarm size.
 
 **Rendezvous Task** (35 configs × 4 seeds = 140 runs):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/embedding_scaling_rendezvous.json \
   --train-script training/train_rendezvous.py \
   --tensorboard-log logs/exp1_embedding_scaling_rendezvous \
@@ -578,7 +578,7 @@ python run_architecture_scalability_experiments.py \
 
 **Pursuit-Evasion Task** (35 configs × 4 seeds = 140 runs):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/embedding_scaling_pursuit_evasion.json \
   --train-script training/train_pursuit_evasion.py \
   --tensorboard-log logs/exp1_embedding_scaling_pursuit_evasion \
@@ -587,7 +587,7 @@ python run_architecture_scalability_experiments.py \
 
 **Quick Test** (first 2 configs only, no actual training):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/embedding_scaling_rendezvous.json \
   --train-script training/train_rendezvous.py \
   --limit 2 --dry-run
@@ -601,7 +601,7 @@ Tests activation functions, network depth, and policy width at fixed embedding_d
 
 **Rendezvous Task** (27 configs × 3 seeds = 81 runs):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/architecture_scalability.json \
   --train-script training/train_rendezvous.py \
   --tensorboard-log logs/exp2_architecture_scalability_rendezvous \
@@ -610,7 +610,7 @@ python run_architecture_scalability_experiments.py \
 
 **Pursuit-Evasion Task** (27 configs × 3 seeds = 81 runs):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/architecture_scalability_pursuit_evasion.json \
   --train-script training/train_pursuit_evasion.py \
   --tensorboard-log logs/exp2_architecture_scalability_pursuit_evasion \
@@ -625,7 +625,7 @@ Tests interaction between embedding dimension and communication sparsity/observa
 
 **Rendezvous Task** (54 configs × 3 seeds = 162 runs):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/robustness_exploration.json \
   --train-script training/train_rendezvous.py \
   --tensorboard-log logs/exp3_robustness_exploration_rendezvous \
@@ -634,7 +634,7 @@ python run_architecture_scalability_experiments.py \
 
 **Pursuit-Evasion Task** (18 simplified configs × 3 seeds = 54 runs):
 ```bash
-python run_architecture_scalability_experiments.py \
+python run_experiments.py \
   --config training/configs/robustness_exploration_pursuit_evasion.json \
   --train-script training/train_pursuit_evasion.py \
   --tensorboard-log logs/exp3_robustness_exploration_pursuit_evasion \

@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default="huttenrauch",
         choices=["simple", "max_min_distance", "weighted_escape", "voronoi_center", "huttenrauch"],
-        help="Evasion strategy (Hüttenrauch: huttenrauch)",
+        help="Evasion strategy (Huttenrauch: huttenrauch)",
     )
     parser.add_argument(
         "--obs-model",
@@ -89,7 +89,7 @@ def main() -> None:
     print(f"Pursuers: {args.num_pursuers}")
     print(f"World Size: {args.world_size}")
     print(f"Observation Model: {args.obs_model}")
-    print(f"Evader Strategy: {args.evader_strategy} (Hüttenrauch)")
+    print(f"Evader Strategy: {args.evader_strategy} (Huttenrauch)")
     print(f"Total Timesteps: {args.total_timesteps:,}")
     print(f"Parallel Envs: {args.num_vec_envs}")
     print(f"\nArchitecture:")

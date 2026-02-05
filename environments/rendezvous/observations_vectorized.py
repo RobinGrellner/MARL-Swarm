@@ -23,6 +23,8 @@ def compute_observations_vectorized(
     max_neighbours: int,
     neighbour_feature_dim: int,
     v_max: float = 1.0,
+    cached_distances: np.ndarray = None,
+    cached_diff: np.ndarray = None,
 ) -> Dict[str, np.ndarray]:
     """Construct observations for all agents using vectorized operations.
 
@@ -54,6 +56,12 @@ def compute_observations_vectorized(
         Feature dimension per neighbor
     v_max : float
         Maximum linear velocity (for velocity normalization)
+    cached_distances : np.ndarray, optional
+        Pre-computed pairwise distance matrix of shape (N, N).
+        If provided, skips distance computation (optimization).
+    cached_diff : np.ndarray, optional
+        Pre-computed pairwise displacement matrix of shape (N, N, 2).
+        If provided, skips displacement computation (optimization).
 
     Returns
     -------
@@ -101,21 +109,27 @@ def compute_observations_vectorized(
     # Vectorized observation construction
     # ===================================================================
 
-    # Step 1: Compute ALL pairwise displacements (N, N, 2)
-    pos_i = positions[:, np.newaxis, :]  # (N, 1, 2)
-    pos_j = positions[np.newaxis, :, :]  # (1, N, 2)
-    diff = pos_j - pos_i  # (N, N, 2) via broadcasting
+    # OPTIMIZATION: Use cached distance/diff if provided (computed once per step in rendezvous_env)
+    # This eliminates redundant O(N²) computation when called from _get_observations()
+    if cached_distances is not None and cached_diff is not None:
+        distances = cached_distances
+        diff = cached_diff
+    else:
+        # Step 1: Compute ALL pairwise displacements (N, N, 2)
+        pos_i = positions[:, np.newaxis, :]  # (N, 1, 2)
+        pos_j = positions[np.newaxis, :, :]  # (1, N, 2)
+        diff = pos_j - pos_i  # (N, N, 2) via broadcasting
 
-    # Apply torus wrapping if needed
-    if torus:
-        half = world_size / 2.0
-        diff = np.where(diff > half, diff - world_size, diff)
-        diff = np.where(diff < -half, diff + world_size, diff)
+        # Apply torus wrapping if needed
+        if torus:
+            half = world_size / 2.0
+            diff = np.where(diff > half, diff - world_size, diff)
+            diff = np.where(diff < -half, diff + world_size, diff)
 
-    # Step 2: Compute ALL pairwise distances (N, N)
-    distances = np.linalg.norm(diff, axis=2)
+        # Step 2: Compute ALL pairwise distances (N, N)
+        distances = np.linalg.norm(diff, axis=2)
 
-    # Step 3: Compute ALL pairwise bearings (N, N) as (cos, sin) pairs
+    # Step 3 (or 1 if cached): Compute ALL pairwise bearings (N, N) as (cos, sin) pairs
     # This avoids discontinuity at ±π that exists with raw angle representation
     bearings_raw = np.arctan2(diff[:, :, 1], diff[:, :, 0])  # (N, N)
     orientations_expanded = orientations[:, np.newaxis]  # (N, 1)

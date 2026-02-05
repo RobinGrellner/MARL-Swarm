@@ -1,26 +1,28 @@
 {
   "metadata": {
-    "experiment_name": "architecture_effects_pursuit_evasion",
-    "version": "2.1",
-    "description": "Experiment 2 (Pursuit-Evasion variant): Architecture Effects on PE task. With embedding_dim fixed at optimal value (64), test if activation/depth/width matter.",
+    "experiment_name": "architecture_scalability_pursuit_evasion_core",
+    "version": "6.0",
+    "description": "Architecture scalability experiment (Pursuit-Evasion): Tests whether phi-network depth and width matter for scale invariance on PE task. Parallel to Rendezvous variant for cross-task comparison. 54 configs matching RV structure.",
     "thesis_chapter": "4.3 - Architecture Simplicity with Mean Embeddings (Task 2)",
     "task": "Pursuit-Evasion",
-    "created": "2026-01-24",
-    "estimated_total_runs": 81,
-    "estimated_runtime_hours": 405,
-    "note": "Parallel structure to architecture_scalability.json but for PE task."
+    "created": "2026-02-04",
+    "core_runs": 54,
+    "estimated_total_runs": 54,
+    "estimated_runtime_hours_sequential": 225,
+    "estimated_runtime_hours_parallel_3way": "75-90",
+    "design_rationale": "Identical architecture matrix to RV variant: 3 pursuer counts [10,50,100] x 2 activations [relu,tanh] x 3 phi-depths [1,2,4] x 3 phi-widths [32,64,128] x 1 seed = 54 configs. Cross-task validation of architectural insensitivity to network size."
   },
 
   "defaults": {
     "env_config": {
-      "num_pursuers": 16,
-      "world_size": 10.0,
+      "world_size": 100.0,
+      "max_steps": 500,
       "obs_model": "global_basic",
       "evader_strategy": "huttenrauch",
-      "capture_radius": 0.5,
-      "evader_speed": 1.0,
-      "v_max": 1.0,
-      "omega_max": 1.0,
+      "capture_radius": 1.0,
+      "evader_speed": 10.0,
+      "v_max": 5.0,
+      "omega_max": 2.0,
       "kinematics": "single",
       "max_pursuers": 100,
       "torus": true
@@ -32,40 +34,79 @@
       "n_steps": 500,
       "batch_size": 128,
       "n_iterations": 500,
+      "num_vec_envs": 4,
       "learning_rate": 0.001,
+      "policy_layers": [64, 64],
       "verbose": 1
     }
   },
 
   "matrix_parameters": {
-    "description": "Cartesian product: 3 activations x 3 depths x 3 widths = 27 unique configs. Each run 3 times with different seeds.",
-    "activations": ["relu", "tanh", "gelu"],
-    "depths": [1, 2, 4],
-    "widths": [[32, 32], [64, 64], [128, 128]],
-    "seeds": [0, 123, 456]
+    "description": "Core factorial matrix: 3 pursuer counts x 2 activations x 3 phi-depths x 3 phi-widths x 1 seed = 54 unique configs. Auto-expanded via config_utils.py.",
+    "num_pursuers": [10, 50, 100],
+    "activation": ["relu", "tanh"],
+    "phi_layers": [1, 2, 4],
+    "phi_hidden_width": [32, 64, 128],
+    "seed": [0]
+  },
+
+  "design_notes": {
+    "pursuer_count_selection": {
+      "description": "Pursuer counts [10, 50, 100] span 10x range, matching RV variant for cross-task comparison.",
+      "note": "PE task has more dynamic evader behavior than rendezvous, so architectural effects may be more pronounced."
+    },
+    "activation_selection": {
+      "description": "Same as RV: [relu, tanh] to test activation effects.",
+      "choices": {
+        "relu": "Standard unbounded activation.",
+        "tanh": "Bounded activation for stability testing."
+      }
+    },
+    "phi_depth_selection": {
+      "description": "Depths [1, 2, 4] test minimal to deep architectures.",
+      "note": "On PE task, deeper networks may provide modest benefit due to complex evader dynamics. Testing across depth levels validates whether this is true."
+    },
+    "phi_width_selection": {
+      "description": "Widths [32, 64, 128] test network capacity for feature extraction.",
+      "note": "PE observation space similar to rendezvous (large padding to max_pursuers=100), so width variation is equally meaningful."
+    },
+    "fixed_parameters": {
+      "embed_dim": {
+        "value": 64,
+        "reasoning": "Fixed at baseline. Embedding dimension tested separately in embedding_scaling_pursuit_evasion."
+      },
+      "policy_layers": {
+        "value": [64, 64],
+        "reasoning": "Downstream policy network, orthogonal to phi-network architecture."
+      }
+    },
+    "cross_task_comparison": {
+      "description": "54 configs with identical (pursuer_count, activation, phi_depth, phi_width) structure enable side-by-side comparison of architecture effects between rendezvous and PE tasks.",
+      "expected_difference": "PE may show more sensitivity to architecture due to dynamic evader. If not, strengthens the 'simplicity suffices' claim across diverse task types."
+    }
   },
 
   "experiments": {
-    "pe_arch_relu_d1_w32_seed0": {
-      "description": "relu activation, depth=1, width=[32,32], seed=0",
+    "_example_n10_relu_d1_w32": {
+      "description": "Smallest team, simplest phi, narrowest hidden.",
+      "env_config": { "num_pursuers": 10 },
       "train_config": {
         "activation": "relu",
         "phi_layers": 1,
-        "policy_layers": [32, 32],
+        "phi_hidden_width": 32,
         "seed": 0
       }
     },
-    "pe_arch_tanh_d2_w64_seed0": {
-      "description": "tanh activation, depth=2, width=[64,64], seed=0",
+    "_example_n100_tanh_d4_w128": {
+      "description": "Maximum team, deep phi, widest hidden.",
+      "env_config": { "num_pursuers": 100 },
       "train_config": {
         "activation": "tanh",
-        "phi_layers": 2,
-        "policy_layers": [64, 64],
+        "phi_layers": 4,
+        "phi_hidden_width": 128,
         "seed": 0
       }
     },
-    "_abbreviated": "Full config mirrors architecture_scalability.json with 3 activations × 3 depths × 3 widths × 3 seeds = 81 configurations. Naming: pe_arch_{activation}_d{depth}_w{width[0]}_seed{seed}."
-  },
-
-  "generation_note": "Python script: For each (activation, depth, width) triplet, generate 3 configs with seeds [0, 123, 456]."
+    "_abbreviated": "Full 54 core configs auto-generated from matrix_parameters by config_utils.py. Naming: num_pursuers{N}_{activation}_d{depth}_w{width}_seed{S}."
+  }
 }

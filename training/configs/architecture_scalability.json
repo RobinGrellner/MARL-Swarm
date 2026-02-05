@@ -1,25 +1,29 @@
 {
   "metadata": {
-    "experiment_name": "architecture_effects",
-    "version": "2.1",
-    "description": "Experiment 2: Architecture Effects (Secondary). With embedding_dim fixed at optimal value (64), test if activation/depth/width matter for scale invariance.",
+    "experiment_name": "architecture_scalability_rendezvous_core",
+    "version": "6.0",
+    "description": "Architecture scalability experiment (Rendezvous): Tests whether phi-network depth and width matter for scale invariance ACROSS different swarm sizes. Embedding dim fixed at 64 (Huttenrauch baseline). Agent counts [10, 50, 100] span 10x range.",
     "thesis_chapter": "4.3 - Architecture Simplicity with Mean Embeddings",
-    "task": "Rendezvous (and Pursuit-Evasion variant)",
-    "created": "2026-01-24",
-    "estimated_total_runs": 81,
-    "estimated_runtime_hours": 405
+    "task": "Rendezvous",
+    "created": "2026-02-04",
+    "core_runs": 54,
+    "estimated_total_runs": 54,
+    "estimated_runtime_hours_sequential": 225,
+    "estimated_runtime_hours_parallel_3way": "75-90",
+    "design_rationale": "Comprehensive factorial: 3 agent counts [10,50,100] x 2 activations [relu,tanh] x 3 phi-depths [1,2,4] x 3 phi-widths [32,64,128] x 1 seed = 54 configs. Tests whether network architecture size (depth and width) matters for scale invariance. Phi network input dimension based on max_agents (large), so width variation is scientifically meaningful. Thesis claim: 'different architecture sizes don't fundamentally change mean embedding behavior across scales.'"
   },
 
   "defaults": {
     "env_config": {
-      "num_agents": 16,
-      "world_size": 10.0,
-      "obs_model": "local_basic",
-      "comm_radius": 8.0,
+      "world_size": 100.0,
+      "max_steps": 500,
+      "obs_model": "global_basic",
+      "comm_radius": null,
       "torus": false,
+      "break_distance_threshold": 2.0,
       "kinematics": "single",
-      "v_max": 1.0,
-      "omega_max": 1.0,
+      "v_max": 5.0,
+      "omega_max": 2.0,
       "max_agents": 100
     },
     "train_config": {
@@ -29,264 +33,101 @@
       "n_steps": 500,
       "batch_size": 128,
       "n_iterations": 500,
+      "num_vec_envs": 4,
       "learning_rate": 0.001,
+      "policy_layers": [64, 64],
       "verbose": 1
     }
   },
 
   "matrix_parameters": {
-    "description": "Cartesian product: 3 activations x 3 depths x 3 widths = 27 unique configs. Each run 3 times with different seeds.",
-    "activations": ["relu", "tanh", "gelu"],
-    "depths": [1, 2, 4],
-    "widths": [[32, 32], [64, 64], [128, 128]],
-    "seeds": [0, 123, 456]
+    "description": "Core factorial matrix: 3 agent counts x 2 activations x 3 phi-depths x 3 phi-widths x 1 seed = 54 unique configs. Auto-expanded via config_utils.py.",
+    "num_agents": [10, 50, 100],
+    "activation": ["relu", "tanh"],
+    "phi_layers": [1, 2, 4],
+    "phi_hidden_width": [32, 64, 128],
+    "seed": [0]
   },
 
-  "experiments": {
-    "arch_relu_d1_w32_seed0": {
-      "description": "relu activation, depth=1, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 1,
-        "policy_layers": [32, 32],
-        "seed": 0
+  "design_notes": {
+    "agent_count_selection": {
+      "description": "Agent counts [10, 50, 100] span 10x range across three scales.",
+      "reasoning": [
+        "N=10: Small swarm. Tests whether phi architecture matters for modest aggregation.",
+        "N=50: Large swarm. Tests phi architecture under substantial neighbor aggregation.",
+        "N=100: Stress test at maximum scale. Tests whether depth/width provide benefit or are unnecessary."
+      ]
+    },
+    "activation_selection": {
+      "description": "Two activations [relu, tanh] cover key distinction: unbounded vs bounded.",
+      "choices": {
+        "relu": "Standard unbounded activation for deep RL.",
+        "tanh": "Bounded output. Tests if stability benefits emerge at large N."
       }
     },
-    "arch_relu_d1_w64_seed0": {
-      "description": "relu activation, depth=1, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 1,
-        "policy_layers": [64, 64],
-        "seed": 0
+    "phi_depth_selection": {
+      "description": "Phi-network depths [1, 2, 4] test from minimal to deep.",
+      "choices": {
+        "depth=1": "Single hidden layer. Minimal representational power.",
+        "depth=2": "Two hidden layers. Moderate representational power.",
+        "depth=4": "Four hidden layers. Tests if over-parameterization helps or hurts."
+      },
+      "rationale": "Depth controls function complexity of neighbor-to-embedding mapping. Core test of 'simplicity suffices' claim."
+    },
+    "phi_width_selection": {
+      "description": "Phi-network hidden layer widths [32, 64, 128] test capacity of feature extraction.",
+      "choices": {
+        "width=32": "Minimal hidden capacity. Tight bottleneck for feature compression.",
+        "width=64": "Standard capacity matching embed_dim.",
+        "width=128": "Large capacity. Tests if extra representational power helps."
+      },
+      "rationale": "Phi input dimension is large (based on max_agents=100 observation padding), so width variation is meaningful. Tests whether larger networks provide benefit for neighbor feature extraction before aggregation."
+    },
+    "fixed_parameters": {
+      "embed_dim": {
+        "value": 64,
+        "reasoning": "Fixed at Huttenrauch baseline. Embedding dimension is tested separately in embedding_scaling experiment."
+      },
+      "policy_layers": {
+        "value": [64, 64],
+        "reasoning": "Downstream policy network. Orthogonal to phi-network architecture. Fixed to isolate phi effects."
+      },
+      "seed": {
+        "value": 0,
+        "reasoning": "Single seed acceptable for secondary ablation. Extension seeds can target high-variance configs if needed."
       }
     },
-    "arch_relu_d1_w128_seed0": {
-      "description": "relu activation, depth=1, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 1,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
+    "cross_experiment_alignment": {
+      "env_settings": "Environment config (world_size=100, global_basic, v_max=5.0, max_agents=100) matches embedding_scaling_rendezvous.json. Enables direct comparison.",
+      "baseline_config": "The config (N=50, relu, d=1, width=64, embed_dim=64, seed=0) provides intermediate validation point."
     },
-    "arch_relu_d2_w32_seed0": {
-      "description": "relu activation, depth=2, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 2,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_relu_d2_w64_seed0": {
-      "description": "relu activation, depth=2, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 2,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_relu_d2_w128_seed0": {
-      "description": "relu activation, depth=2, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 2,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_relu_d4_w32_seed0": {
-      "description": "relu activation, depth=4, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 4,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_relu_d4_w64_seed0": {
-      "description": "relu activation, depth=4, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 4,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_relu_d4_w128_seed0": {
-      "description": "relu activation, depth=4, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "relu",
-        "phi_layers": 4,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d1_w32_seed0": {
-      "description": "tanh activation, depth=1, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 1,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d1_w64_seed0": {
-      "description": "tanh activation, depth=1, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 1,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d1_w128_seed0": {
-      "description": "tanh activation, depth=1, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 1,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d2_w32_seed0": {
-      "description": "tanh activation, depth=2, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 2,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d2_w64_seed0": {
-      "description": "tanh activation, depth=2, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 2,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d2_w128_seed0": {
-      "description": "tanh activation, depth=2, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 2,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d4_w32_seed0": {
-      "description": "tanh activation, depth=4, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 4,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d4_w64_seed0": {
-      "description": "tanh activation, depth=4, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 4,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_tanh_d4_w128_seed0": {
-      "description": "tanh activation, depth=4, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "tanh",
-        "phi_layers": 4,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d1_w32_seed0": {
-      "description": "gelu activation, depth=1, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 1,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d1_w64_seed0": {
-      "description": "gelu activation, depth=1, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 1,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d1_w128_seed0": {
-      "description": "gelu activation, depth=1, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 1,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d2_w32_seed0": {
-      "description": "gelu activation, depth=2, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 2,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d2_w64_seed0": {
-      "description": "gelu activation, depth=2, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 2,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d2_w128_seed0": {
-      "description": "gelu activation, depth=2, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 2,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d4_w32_seed0": {
-      "description": "gelu activation, depth=4, width=[32,32], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 4,
-        "policy_layers": [32, 32],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d4_w64_seed0": {
-      "description": "gelu activation, depth=4, width=[64,64], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 4,
-        "policy_layers": [64, 64],
-        "seed": 0
-      }
-    },
-    "arch_gelu_d4_w128_seed0": {
-      "description": "gelu activation, depth=4, width=[128,128], seed=0",
-      "train_config": {
-        "activation": "gelu",
-        "phi_layers": 4,
-        "policy_layers": [128, 128],
-        "seed": 0
-      }
+    "thesis_narrative": {
+      "core_claim": "Different phi-network architecture sizes (depth and width) do not fundamentally change mean embedding behavior across agent scales.",
+      "validation_strategy": "If both depth and width variations show minimal performance differences across [10, 50, 100] agents, this confirms that mean aggregation provides scale-invariant representational power regardless of architecture size."
     }
   },
 
-  "generation_note": "This config shows seed=0 for each (activation, depth, width) triplet. To generate the full 81 configs, replicate each above 3 times with seeds [0, 123, 456]. Python script: for each (act, depth, width), generate 3 configs with names: arch_{act}_d{depth}_w{width[0]}_seed{seed}."
+  "experiments": {
+    "_example_n10_relu_d1_w32": {
+      "description": "Smallest swarm, simplest phi (1 layer), narrowest hidden (width=32). Minimal architecture baseline.",
+      "env_config": { "num_agents": 10 },
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 1,
+        "phi_hidden_width": 32,
+        "seed": 0
+      }
+    },
+    "_example_n100_tanh_d4_w128": {
+      "description": "Maximum swarm, deep phi (4 layers), widest hidden (width=128). Maximum architecture complexity.",
+      "env_config": { "num_agents": 100 },
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 4,
+        "phi_hidden_width": 128,
+        "seed": 0
+      }
+    },
+    "_abbreviated": "Full 54 core configs auto-generated from matrix_parameters by config_utils.py. Naming: num_agents{N}_{activation}_d{depth}_w{width}_seed{S}."
+  }
 }

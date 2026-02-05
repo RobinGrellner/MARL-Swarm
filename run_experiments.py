@@ -1,31 +1,53 @@
 #!/usr/bin/env python3
 """
-Generic experiment runner for MARL swarm training.
+General-purpose experiment runner for MARL swarm training.
 
-Runs a suite of experiments from a JSON config file. Each experiment trains
-a policy for a specified number of timesteps and logs results to TensorBoard.
+Runs a suite of experiments from a JSON config file. Supports matrix parameter
+expansion to automatically generate multiple experiment configurations from a
+single config template. Each experiment trains a policy and logs results to TensorBoard.
+
+Supports:
+- Rendezvous task (training/train_rendezvous.py)
+- Pursuit-Evasion task (training/train_pursuit_evasion.py)
+- Any custom training script with compatible command-line interface
+
+Features:
+- Matrix parameter expansion: Automatically expands combinations of parameters
+- Auto-naming: Generates experiment names from parameter combinations
+- Sequential execution: Runs experiments one at a time
+- TensorBoard logging: Organizes logs per experiment
+- Dry-run mode: Preview experiments before running
 
 Usage:
-    python run_architecture_scalability_experiments.py [options]
+    python run_experiments.py --config CONFIG.json --train-script SCRIPT.py [options]
 
 Examples:
-    # Run all experiments from embedding_scaling.json
-    python run_architecture_scalability_experiments.py \\
-      --config training/configs/embedding_scaling.json \\
-      --total-timesteps 5000000
+    # Run all experiments from embedding_scaling_rendezvous.json
+    python run_experiments.py \\
+      --config training/configs/embedding_scaling_rendezvous.json \\
+      --num-vec-envs 8
 
-    # Test first 2 experiments without running
-    python run_architecture_scalability_experiments.py \\
-      --config training/configs/embedding_scaling.json \\
-      --limit 2 --dry-run
+    # Run pursuit-evasion experiments
+    python run_experiments.py \\
+      --config training/configs/embedding_scaling_pursuit_evasion.json \\
+      --train-script training/train_pursuit_evasion.py \\
+      --num-vec-envs 8
+
+    # Test first 3 experiments without running
+    python run_experiments.py \\
+      --config training/configs/embedding_scaling_rendezvous.json \\
+      --limit 3 --dry-run
 
 Options:
-    --config PATH               Config file (default: architecture_scalability.json)
-    --limit N                   Run only first N experiments (for testing)
-    --dry-run                   Print experiments without running them
-    --tensorboard-log PATH      Custom TensorBoard log directory (default: logs/experiments)
+    --config PATH               Config file (required)
+    --train-script PATH         Training script to use (default: training/train_rendezvous.py)
     --num-vec-envs N            Number of parallel environments (default: 8)
     --total-timesteps N         Training duration in timesteps (default: 2000000)
+    --tensorboard-log PATH      Custom TensorBoard log directory (default: logs/experiments)
+    --limit N                   Run only first N experiments (for testing)
+    --dry-run                   Print experiments without running them
+    --use-cuda                  Enable GPU/CUDA training for all experiments
+    --model-dir PATH            Directory to save trained models (default: models/)
 """
 
 import json
@@ -36,8 +58,6 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import datetime
 import io
-import concurrent.futures
-import threading
 
 # Force UTF-8 output on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -59,7 +79,6 @@ class ArchitectureScalabilityRunner:
         dry_run: bool = False,
         train_script: str = "training/train_rendezvous.py",
         use_cuda: bool = False,
-        num_parallel_experiments: int = 1,
         model_dir: Optional[str] = None,
     ):
         self.config_path = Path(config_path)
@@ -69,7 +88,6 @@ class ArchitectureScalabilityRunner:
         self.dry_run = dry_run
         self.train_script = train_script
         self.use_cuda = use_cuda
-        self.num_parallel_experiments = num_parallel_experiments
         self.model_dir = model_dir or "models"
 
         # Load config and expand matrix parameters
@@ -79,7 +97,6 @@ class ArchitectureScalabilityRunner:
         self.total_experiments = 0
         self.completed_experiments = 0
         self.failed_experiments = 0
-        self.lock = threading.Lock()  # For thread-safe counter updates
 
     def get_all_experiments(self, limit: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
         """Get all experiments from config, optionally limited to first N."""
@@ -274,48 +291,21 @@ class ArchitectureScalabilityRunner:
             return False
 
     def run_experiments(self, limit: Optional[int] = None) -> None:
-        """Run all experiments from config, optionally in parallel."""
+        """Run all experiments from config sequentially."""
         experiments = self.get_all_experiments(limit=limit)
 
         print(f"\n{'=' * 80}")
-        print(f"Running {len(experiments)} experiments")
-        if self.num_parallel_experiments > 1:
-            print(f"Parallel mode: {self.num_parallel_experiments} experiments at a time")
+        print(f"Running {len(experiments)} experiments (sequential mode)")
         print(f"{'=' * 80}")
 
-        if self.num_parallel_experiments == 1:
-            # Sequential execution
-            for i, (exp_name, exp_config) in enumerate(experiments.items(), 1):
-                success = self.run_experiment(exp_name, exp_config, i, len(experiments))
-                with self.lock:
-                    self.total_experiments += 1
-                    if success:
-                        self.completed_experiments += 1
-                    else:
-                        self.failed_experiments += 1
-        else:
-            # Parallel execution using ThreadPoolExecutor
-            with concurrent.futures.ThreadPoolExecutor(max_workers=self.num_parallel_experiments) as executor:
-                futures = {}
-                for i, (exp_name, exp_config) in enumerate(experiments.items(), 1):
-                    future = executor.submit(self.run_experiment, exp_name, exp_config, i, len(experiments))
-                    futures[future] = (exp_name, i)
-
-                for future in concurrent.futures.as_completed(futures):
-                    exp_name, exp_index = futures[future]
-                    try:
-                        success = future.result()
-                        with self.lock:
-                            self.total_experiments += 1
-                            if success:
-                                self.completed_experiments += 1
-                            else:
-                                self.failed_experiments += 1
-                    except Exception as e:
-                        print(f"[ERROR] {exp_name} raised exception: {e}")
-                        with self.lock:
-                            self.total_experiments += 1
-                            self.failed_experiments += 1
+        # Sequential execution
+        for i, (exp_name, exp_config) in enumerate(experiments.items(), 1):
+            success = self.run_experiment(exp_name, exp_config, i, len(experiments))
+            self.total_experiments += 1
+            if success:
+                self.completed_experiments += 1
+            else:
+                self.failed_experiments += 1
 
     def print_summary(self) -> None:
         """Print experiment summary."""
@@ -387,12 +377,6 @@ def main():
         help="Enable GPU/CUDA training for all experiments",
     )
     parser.add_argument(
-        "--parallel",
-        type=int,
-        default=1,
-        help="Number of experiments to run in parallel (default: 1 = sequential)",
-    )
-    parser.add_argument(
         "--model-dir",
         type=str,
         default="models",
@@ -414,7 +398,6 @@ def main():
         dry_run=args.dry_run,
         train_script=args.train_script,
         use_cuda=args.use_cuda,
-        num_parallel_experiments=args.parallel,
         model_dir=args.model_dir,
     )
 
@@ -426,7 +409,6 @@ def main():
     print(f"Config: {config_path}")
     print(f"TensorBoard logs: {args.tensorboard_log}")
     print(f"Parallel environments per experiment: {args.num_vec_envs}")
-    print(f"Parallel experiments: {args.parallel}")
     print(f"GPU/CUDA enabled: {args.use_cuda}")
     print(f"Model directory: {args.model_dir}")
     print(f"Timesteps per training: {args.total_timesteps:,}")

@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "experiment_name": "architecture_effects",
+    "version": "2.1",
+    "description": "Experiment 2: Architecture Effects (Secondary). With embedding_dim fixed at optimal value (64), test if activation/depth/width matter for scale invariance.",
+    "thesis_chapter": "4.3 - Architecture Simplicity with Mean Embeddings",
+    "task": "Rendezvous (and Pursuit-Evasion variant)",
+    "created": "2026-01-24",
+    "estimated_total_runs": 81,
+    "estimated_runtime_hours": 405
+  },
+
+  "defaults": {
+    "env_config": {
+      "num_agents": 16,
+      "world_size": 10.0,
+      "obs_model": "local_basic",
+      "comm_radius": 8.0,
+      "torus": false,
+      "kinematics": "single",
+      "v_max": 1.0,
+      "omega_max": 1.0,
+      "max_agents": 100
+    },
+    "train_config": {
+      "embed_dim": 64,
+      "aggregation": "mean",
+      "algorithm": "trpo",
+      "n_steps": 500,
+      "batch_size": 128,
+      "n_iterations": 500,
+      "num_vec_envs": 4,
+      "learning_rate": 0.001,
+      "verbose": 1
+    }
+  },
+
+  "matrix_parameters": {
+    "description": "Cartesian product: 3 activations x 3 depths x 3 widths = 27 unique configs. Each run 3 times with different seeds.",
+    "activations": ["relu", "tanh", "gelu"],
+    "depths": [1, 2, 4],
+    "widths": [[32, 32], [64, 64], [128, 128]],
+    "seeds": [0, 123, 456]
+  },
+
+  "experiments": {
+    "arch_relu_d1_w32_seed0": {
+      "description": "relu activation, depth=1, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 1,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_relu_d1_w64_seed0": {
+      "description": "relu activation, depth=1, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 1,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_relu_d1_w128_seed0": {
+      "description": "relu activation, depth=1, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 1,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_relu_d2_w32_seed0": {
+      "description": "relu activation, depth=2, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 2,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_relu_d2_w64_seed0": {
+      "description": "relu activation, depth=2, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 2,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_relu_d2_w128_seed0": {
+      "description": "relu activation, depth=2, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 2,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_relu_d4_w32_seed0": {
+      "description": "relu activation, depth=4, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 4,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_relu_d4_w64_seed0": {
+      "description": "relu activation, depth=4, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 4,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_relu_d4_w128_seed0": {
+      "description": "relu activation, depth=4, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "relu",
+        "phi_layers": 4,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d1_w32_seed0": {
+      "description": "tanh activation, depth=1, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 1,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d1_w64_seed0": {
+      "description": "tanh activation, depth=1, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 1,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d1_w128_seed0": {
+      "description": "tanh activation, depth=1, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 1,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d2_w32_seed0": {
+      "description": "tanh activation, depth=2, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 2,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d2_w64_seed0": {
+      "description": "tanh activation, depth=2, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 2,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d2_w128_seed0": {
+      "description": "tanh activation, depth=2, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 2,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d4_w32_seed0": {
+      "description": "tanh activation, depth=4, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 4,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d4_w64_seed0": {
+      "description": "tanh activation, depth=4, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 4,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_tanh_d4_w128_seed0": {
+      "description": "tanh activation, depth=4, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "tanh",
+        "phi_layers": 4,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d1_w32_seed0": {
+      "description": "gelu activation, depth=1, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 1,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d1_w64_seed0": {
+      "description": "gelu activation, depth=1, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 1,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d1_w128_seed0": {
+      "description": "gelu activation, depth=1, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 1,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d2_w32_seed0": {
+      "description": "gelu activation, depth=2, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 2,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d2_w64_seed0": {
+      "description": "gelu activation, depth=2, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 2,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d2_w128_seed0": {
+      "description": "gelu activation, depth=2, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 2,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d4_w32_seed0": {
+      "description": "gelu activation, depth=4, width=[32,32], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 4,
+        "policy_layers": [32, 32],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d4_w64_seed0": {
+      "description": "gelu activation, depth=4, width=[64,64], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 4,
+        "policy_layers": [64, 64],
+        "seed": 0
+      }
+    },
+    "arch_gelu_d4_w128_seed0": {
+      "description": "gelu activation, depth=4, width=[128,128], seed=0",
+      "train_config": {
+        "activation": "gelu",
+        "phi_layers": 4,
+        "policy_layers": [128, 128],
+        "seed": 0
+      }
+    }
+  },
+
+  "generation_note": "This config shows seed=0 for each (activation, depth, width) triplet. To generate the full 81 configs, replicate each above 3 times with seeds [0, 123, 456]. Python script: for each (act, depth, width), generate 3 configs with names: arch_{act}_d{depth}_w{width[0]}_seed{seed}."
+}

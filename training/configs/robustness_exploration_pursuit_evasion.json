@@ -31,6 +31,7 @@
       "phi_layers": 1,
       "algorithm": "ppo",
       "total_timesteps": 2000000,
+      "num_vec_envs": 4,
       "learning_rate": 0.0003,
       "verbose": 1
     }

@@ -7,6 +7,7 @@
   "kinematics": "single",
   "torus": false,
   "total_timesteps": 200000,
+  "num_vec_envs": 4,
   "max_agents": 50,
   "learning_rate": 0.0003,
   "embed_dim": 64,

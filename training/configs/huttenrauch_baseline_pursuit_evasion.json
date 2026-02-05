@@ -30,6 +30,7 @@
       "phi_layers": 1,
       "algorithm": "trpo",
       "total_timesteps": 10000000,
+      "num_vec_envs": 4,
       "learning_rate": 0.001,
       "verbose": 1
     }

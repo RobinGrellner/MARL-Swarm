@@ -17,6 +17,7 @@ from supersuit import pettingzoo_env_to_vec_env_v1, concat_vec_envs_v1
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecMonitor, SubprocVecEnv
 from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.utils import safe_mean
 from sb3_contrib import TRPO
 from policies.mean_embedding_extractor import MeanEmbeddingExtractor
 
@@ -25,6 +26,9 @@ import numpy as np
 import time
 from collections import deque
 from stable_baselines3.common.callbacks import BaseCallback
+import psutil
+import gc
+import os
 
 # Suppress render_mode warning from VecEnv
 warnings.filterwarnings("ignore", message=".*render_mode.*", category=UserWarning)
@@ -38,6 +42,9 @@ class MALRMetricsCallback(BaseCallback):
     - Training efficiency (timesteps/second)
     - Episode diversity across vectorized environments
     - Action entropy for coordination analysis
+
+    OPTIMIZATION: Expensive statistics computations moved to _on_rollout_end()
+    instead of _on_step() to avoid 2000+ redundant NumPy operations per rollout.
     """
 
     def __init__(self, verbose: int = 0):
@@ -48,14 +55,22 @@ class MALRMetricsCallback(BaseCallback):
         self.ep_info_buffer = deque(maxlen=100)  # For success rate tracking
 
     def _on_step(self) -> bool:
-        """Called after every environment step."""
-        # Collect episode info from VecMonitor
+        """Called after every environment step - collect data only, defer computation."""
+        # Collect episode info from VecMonitor (cheap operation)
         if hasattr(self.model.env, "ep_info_buffer"):
             for ep_info in self.model.env.ep_info_buffer:
                 self.ep_info_buffer.append(ep_info)
                 self.reward_buffer.append(ep_info["r"])
                 self.episode_lengths.append(ep_info["l"])
 
+        return True
+
+    def _on_rollout_end(self) -> None:
+        """Called once per rollout (after n_steps environment steps).
+
+        Compute expensive statistics here instead of every step.
+        With n_steps=2048, this reduces computations from 2048x to 1x per rollout.
+        """
         # Log rolling reward statistics
         if len(self.reward_buffer) > 1:
             reward_mean = np.mean(list(self.reward_buffer))
@@ -96,8 +111,6 @@ class MALRMetricsCallback(BaseCallback):
             if capture_times:
                 self.logger.record("task/capture_time_mean", np.mean(capture_times))
 
-        return True
-
 
 class IterationCounterCallback(BaseCallback):
     """Callback to log training metrics with iteration as the x-axis step.
@@ -137,11 +150,12 @@ class IterationCounterCallback(BaseCallback):
         "task/capture_time_mean",
     )
 
-    def __init__(self, verbose: int = 0):
+    def __init__(self, verbose: int = 0, flush_every: int = 10):
         super().__init__(verbose)
         self.iteration = 0
         self._writer = None  # Resolved lazily from SB3 logger
         self._prev_train_metrics = {}  # Metrics snapshotted from previous iteration
+        self._flush_every = flush_every  # Flush TensorBoard every N iterations (not every step)
 
     def _get_writer(self):
         """Get the SummaryWriter from SB3's TensorBoard output format."""
@@ -174,7 +188,6 @@ class IterationCounterCallback(BaseCallback):
             return
 
         # --- Rollout metrics: compute directly from episode buffer ---
-        from stable_baselines3.common.utils import safe_mean
         if len(self.model.ep_info_buffer) > 0:
             rewards = [ep["r"] for ep in self.model.ep_info_buffer]
             lengths = [ep["l"] for ep in self.model.ep_info_buffer]
@@ -189,7 +202,15 @@ class IterationCounterCallback(BaseCallback):
             writer.add_scalar(f"by_iter/{key}", val, global_step=self.iteration)
         self._prev_train_metrics.clear()
 
-        writer.flush()
+        # Flush periodically to reduce blocking I/O (every 10 iterations instead of every iteration)
+        if self.iteration % self._flush_every == 0:
+            writer.flush()
+
+    def _on_training_end(self) -> None:
+        """Ensure any remaining TensorBoard data is flushed at training end."""
+        writer = self._get_writer()
+        if writer is not None:
+            writer.flush()
 
 
 class CheckpointCallback(BaseCallback):
@@ -221,6 +242,87 @@ class CheckpointCallback(BaseCallback):
             self.last_save_step = self.model.num_timesteps
 
         return True
+
+
+class MemoryDiagnosticCallback(BaseCallback):
+    """Callback for monitoring memory usage and timing metrics per rollout.
+
+    Logs memory-related metrics at the end of each rollout to detect:
+    - Memory leaks (RSS growing monotonically)
+    - Memory fragmentation (VMS diverging from RSS)
+    - Garbage collection pressure (gen0/gen2 counts growing)
+    - Resource leaks (file handles, child processes)
+    - Performance degradation (rollout wall-clock time increasing)
+    """
+
+    def __init__(self, verbose: int = 0, log_every_n_rollouts: int = 10):
+        super().__init__(verbose)
+        self._process = psutil.Process()
+        self._log_every_n_rollouts = log_every_n_rollouts
+        self._rollout_count = 0
+        self._rollout_start_time = None
+        self._initial_rss_mb = None
+
+    def _on_training_start(self) -> None:
+        """Initialize diagnostic state at training start."""
+        self._initial_rss_mb = self._process.memory_info().rss / 1024 / 1024
+        if self.verbose > 0:
+            print(f"[DIAG] Initial memory: {self._initial_rss_mb:.1f} MB")
+
+    def _on_rollout_start(self) -> None:
+        """Record timestamp at rollout start."""
+        self._rollout_start_time = time.time()
+
+    def _on_step(self) -> bool:
+        """Called after every environment step. Returns True to continue training."""
+        return True
+
+    def _on_rollout_end(self) -> None:
+        """Log memory and timing metrics at rollout end."""
+        self._rollout_count += 1
+
+        # Only log periodically to reduce I/O overhead
+        if self._rollout_count % self._log_every_n_rollouts != 0:
+            return
+
+        # Collect all diagnostic metrics
+        try:
+            mem_info = self._process.memory_info()
+            rss_mb = mem_info.rss / 1024 / 1024
+            vms_mb = mem_info.vms / 1024 / 1024
+            num_handles = self._process.num_handles()
+            num_children = len(self._process.children(recursive=True))
+            gc_counts = gc.get_count()  # (gen0, gen1, gen2)
+            num_objects = len(gc.get_objects())
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return
+
+        # Calculate rollout wall-clock time
+        rollout_wall_time_s = None
+        if self._rollout_start_time is not None:
+            rollout_wall_time_s = time.time() - self._rollout_start_time
+
+        # Log memory metrics
+        self.logger.record("diag/rss_mb", rss_mb)
+        self.logger.record("diag/vms_mb", vms_mb)
+        self.logger.record("diag/num_handles", num_handles)
+        self.logger.record("diag/num_children", num_children)
+        self.logger.record("diag/gc_gen0", gc_counts[0])
+        self.logger.record("diag/gc_gen2", gc_counts[2])
+        self.logger.record("diag/num_python_objects", num_objects)
+
+        if rollout_wall_time_s is not None:
+            self.logger.record("diag/rollout_wall_time_s", rollout_wall_time_s)
+
+        # Print periodic summary to console
+        if self.verbose > 0 and self._rollout_count % (10 * self._log_every_n_rollouts) == 0:
+            memory_delta_mb = rss_mb - self._initial_rss_mb if self._initial_rss_mb else 0
+            print(
+                f"[DIAG] Rollout {self._rollout_count}: "
+                f"RSS={rss_mb:.1f} MB (d{memory_delta_mb:+.1f}), "
+                f"Handles={num_handles}, "
+                f"Rollout_time={rollout_wall_time_s:.2f}s"
+            )
 
 
 def parse_policy_layers(layers_str: str) -> List[int]:
@@ -361,7 +463,7 @@ def build_embed_config(args: argparse.Namespace) -> Dict[str, Any]:
 
 
 def wrap_env_for_sb3(
-    env, *, n_envs: int = 1, num_cpus: int = 1, monitor_keywords: Optional[Tuple[str, ...]] = None, normalize: bool = True
+    env, *, n_envs: int = 1, num_cpus: Optional[int] = None, monitor_keywords: Optional[Tuple[str, ...]] = None, normalize: bool = True
 ) -> VecMonitor:
     """Wrap a PettingZoo environment for Stable-Baselines3 training.
 
@@ -369,35 +471,42 @@ def wrap_env_for_sb3(
 
     1. Flatten per-agent observations into single feature vectors
     2. Convert flattened PettingZoo env to a vectorized environment (MarkovVectorEnv)
-    3. Concatenate n_envs copies using concat_vec_envs_v1 with num_cpus=1 for subprocess isolation
+    3. Concatenate n_envs copies using concat_vec_envs_v1 with synchronous execution
     4. Apply VecMonitor to record episode statistics
 
-    CRITICAL FIX: Changed from num_cpus=0 to num_cpus=1
-    - num_cpus=0: Synchronous concatenation without process isolation
-      Result: Episode state corruption, lengths oscillating between 1024 and 1 step
-    - num_cpus=1: Each environment copy runs in its own subprocess
-      Result: Proper state isolation, stable training
+    DESIGN DECISION: Use num_cpus=0 (synchronous) for stability and reliability.
 
-    KEY INSIGHT: VecEnv naturally desynchronizes through independent auto-resets
-    - All environments start together at timestep 0
-    - When an episode finishes, ONLY that environment resets (not all)
-    - Over time, environments drift to different episode phases
-    - Result: Rollout buffer naturally contains diverse episode phases
-    - No explicit desynchronization needed - it happens automatically!
+    Rationale:
+    - Environment instances contain unpickleable objects (pygame resources, cached state)
+    - Windows multiprocessing uses 'spawn' context which requires full serialization
+    - Subprocess parallelism overhead exceeds benefits for NumPy-based physics
+    - Training bottleneck is GPU policy updates, not environment stepping
+
+    With num_cpus=0:
+    - Still get n_envs environment copies (training diversity via auto-reset desynchronization)
+    - No IPC overhead (observations/actions stay in main process)
+    - No pickling failures or subprocess crashes
+    - Environments naturally desynchronize through independent episode resets
+
+    If true subprocess parallelism is needed later, use factory function pattern
+    (pass environment class+kwargs, not instances).
 
     :param env: the PettingZoo environment to wrap (RendezvousEnv or PursuitEvasionEnv)
     :param n_envs: number of parallel environment copies
-    :param num_cpus: number of CPU cores per environment subprocess (default: 1)
+    :param num_cpus: number of worker processes (default: None = 0 for synchronous execution)
     :param monitor_keywords: optional tuple of keys from env.info to record
     :param normalize: whether to apply observation and reward normalisation (deprecated, kept for API compatibility)
     :return: a wrapped ``VecEnv`` ready for SB3
     """
+    # Default to synchronous execution for stability
+    if num_cpus is None:
+        num_cpus = 0
+
     # Flatten PettingZoo observations to 1D per agent
     env_flat = supersuit_flatten(env)
     # Convert to a SuperSuit vector env
     vec_env = pettingzoo_env_to_vec_env_v1(env_flat)
-    # Concatenate into an SB3 VecEnv with subprocess isolation
-    # CRITICAL: Use num_cpus>0 instead of num_cpus=0 to avoid episode corruption
+    # Concatenate into an SB3 VecEnv with synchronous execution
     vec_env = concat_vec_envs_v1(vec_env, num_vec_envs=n_envs, num_cpus=num_cpus, base_class="stable_baselines3")
 
     # Apply VecMonitor to log episode statistics
@@ -670,29 +779,32 @@ def run_training(
 
     metrics_callback = MALRMetricsCallback(verbose=0)
     iteration_callback = IterationCounterCallback(verbose=0)
+    memory_callback = MemoryDiagnosticCallback(verbose=1, log_every_n_rollouts=10)
 
     # Create checkpoint callback with automatic directory naming
-    import os
     checkpoint_dir = save_path.replace(".zip", "_checkpoints/") if save_path else "models/checkpoints/"
     os.makedirs(checkpoint_dir, exist_ok=True)
     checkpoint_callback = CheckpointCallback(save_freq=1_000_000, save_path=checkpoint_dir, verbose=1)
 
-    callbacks = CallbackList([metrics_callback, iteration_callback, checkpoint_callback])
+    callbacks = CallbackList([metrics_callback, iteration_callback, memory_callback, checkpoint_callback])
 
-    # 7. Train model with callbacks
-    model.learn(total_timesteps=total_timesteps, callback=callbacks)
+    # 7. Train model with callbacks (in try/finally to ensure vec_env cleanup)
+    try:
+        model.learn(total_timesteps=total_timesteps, callback=callbacks)
+    finally:
+        # Always close vec_env to prevent zombie subprocesses
+        vec_env.close()
 
     # 8. Save final model if path provided
     if save_path:
         model.save(save_path)
         print(f"\nFinal model saved to {save_path}")
 
-    # Collect diagnostic info
+    # Collect diagnostic info (NOTE: vec_env is closed, do not store reference)
     info = {
         "layout": layout,
         "embed_config": embed_config,
         "algo_params": default_params,
         "algorithm": algorithm,
-        "vec_env": vec_env,
     }
     return model, info

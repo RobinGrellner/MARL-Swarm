@@ -297,7 +297,10 @@ class RendezvousEnv(BaseEnv):
     # Observations (Vectorized)
     # ------------------------------------------------------------------
     def _get_observations(self) -> Dict[str, np.ndarray]:
-        """Construct observations for all agents using vectorized implementation."""
+        """Construct observations for all agents using vectorized implementation.
+
+        Passes cached distance/displacement matrices to avoid redundant O(N²) computation.
+        """
         return compute_observations_vectorized(
             positions=self.agent_handler.positions,
             orientations=self.agent_handler.orientations,
@@ -312,6 +315,8 @@ class RendezvousEnv(BaseEnv):
             max_neighbours=self._max_neighbours,
             neighbour_feature_dim=self._neighbour_feature_dim,
             v_max=self.agent_handler.v_max,
+            cached_distances=self._cached_distances,
+            cached_diff=self._cached_diff,
         )
 
     # ------------------------------------------------------------------
