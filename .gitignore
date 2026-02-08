@@ -161,14 +161,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-
-#ignore models
-*.zip
-./models/*
-
-#ignore logs
-./logs/*
-
 #VSCode
 ./.VSCode
 # Claude Code specific files

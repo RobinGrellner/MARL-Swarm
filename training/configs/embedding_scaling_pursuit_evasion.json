@@ -10,20 +10,20 @@
     "estimated_total_runs": 20,
     "estimated_runtime_hours_sequential": 150,
     "estimated_runtime_hours_parallel_3way": "50",
-    "hyperparameter_notes": "Updated: n_steps=256, batch_size=512, n_iterations=500 (was 2M timesteps)",
+    "hyperparameter_notes": "Updated to match Hüttenrauch baseline: max_steps=1024, evader_speed=20.0, v_max=10.0, n_steps=1024, batch_size=128, learning_rate=5e-4, n_critic_updates=3, n_iterations=1000. Matches baseline structure (1024 timesteps/batch, 2x evader speed, proper episode boundaries).",
     "design_rationale": "Parallel to rendezvous core matrix: [4,16,50,100] pursuers x [4,8,32,64,128] embed dims x 1 seed. Single seed per config; prioritize second seed for highest-variance (large N, small d) if time permits."
   },
 
   "defaults": {
     "env_config": {
       "world_size": 100.0,
-      "max_steps": 500,
+      "max_steps": 1024,
       "obs_model": "global_basic",
       "evader_strategy": "huttenrauch",
       "capture_radius": 1.0,
-      "evader_speed": 10.0,
-      "v_max": 5.0,
-      "omega_max": 2.0,
+      "evader_speed": 20.0,
+      "v_max": 10.0,
+      "omega_max": 3.14159,
       "kinematics": "single",
       "max_pursuers": 100,
       "torus": true
@@ -33,11 +33,15 @@
       "aggregation": "mean",
       "phi_layers": 1,
       "algorithm": "trpo",
-      "n_steps": 256,
-      "batch_size": 512,
-      "n_iterations": 500,
+      "n_steps": 1024,
+      "batch_size": 128,
+      "n_iterations": 1000,
       "num_vec_envs": 4,
-      "learning_rate": 0.001,
+      "learning_rate": 5e-4,
+      "n_critic_updates": 3,
+      "gae_lambda": 0.98,
+      "target_kl": 0.01,
+      "cg_max_steps": 10,
       "verbose": 1
     }
   },
