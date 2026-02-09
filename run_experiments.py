@@ -153,11 +153,14 @@ class ArchitectureScalabilityRunner:
         n_steps = train_config.get("n_steps", None)
         batch_size = train_config.get("batch_size", None)
 
+        # Use num_vec_envs from config if specified, otherwise fall back to CLI value
+        num_vec_envs = train_config.get("num_vec_envs", self.num_vec_envs)
+
         # Compute total_timesteps from n_iterations if specified, otherwise fall back
         n_iterations = train_config.get("n_iterations", None)
         if n_iterations is not None:
             n_steps_val = n_steps if n_steps is not None else 500
-            total_timesteps = n_iterations * n_steps_val * num_agents * self.num_vec_envs
+            total_timesteps = n_iterations * n_steps_val * num_agents * num_vec_envs
         else:
             total_timesteps = train_config.get("total_timesteps", self.total_timesteps)
 
@@ -206,7 +209,7 @@ class ArchitectureScalabilityRunner:
             "--total-timesteps",
             str(total_timesteps),
             "--num-vec-envs",
-            str(self.num_vec_envs),
+            str(num_vec_envs),
             "--algorithm",
             algorithm,
             "--model-path",
