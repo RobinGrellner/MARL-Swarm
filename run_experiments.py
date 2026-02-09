@@ -82,7 +82,11 @@ class ArchitectureScalabilityRunner:
         model_dir: Optional[str] = None,
     ):
         self.config_path = Path(config_path)
-        self.tensorboard_log = tensorboard_log or "logs/architecture_scalability"
+        if tensorboard_log is None:
+            config_name = self.config_path.stem
+            self.tensorboard_log = f"logs/{config_name}"
+        else:
+            self.tensorboard_log = tensorboard_log
         self.num_vec_envs = num_vec_envs
         self.total_timesteps = total_timesteps
         self.dry_run = dry_run
@@ -98,17 +102,29 @@ class ArchitectureScalabilityRunner:
         self.completed_experiments = 0
         self.failed_experiments = 0
 
-    def get_all_experiments(self, limit: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
-        """Get all experiments from config, optionally limited to first N."""
+        # Auto-detect training script from environment config if using default
+        if train_script == "training/train_rendezvous.py":  # Using default
+            default_env_config = self.config.get("defaults", {}).get("env_config", {})
+            environment = default_env_config.get("environment", "rendezvous")
+            if environment == "pursuit_evasion":
+                self.train_script = "training/train_pursuit_evasion.py"
+
+    def get_all_experiments(self, limit: Optional[int] = None, skip: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
+        """Get all experiments from config, optionally limited and skipping first N."""
         experiments = {
             name: config for name, config in self.experiments.items()
             if not name.startswith("_")  # Skip metadata entries
         }
 
-        if limit:
-            experiments = dict(list(experiments.items())[:limit])
+        items = list(experiments.items())
 
-        return experiments
+        if skip:
+            items = items[skip:]
+
+        if limit:
+            items = items[:limit]
+
+        return dict(items)
 
     def build_train_command(self, exp_name: str, exp_config: Dict[str, Any]) -> List[str]:
         """Build training command from experiment config.
@@ -146,6 +162,7 @@ class ArchitectureScalabilityRunner:
         aggregation = train_config.get("aggregation", "mean")
         embed_dim = train_config.get("embed_dim", 64)
         phi_layers = train_config.get("phi_layers", 1)
+        phi_hidden_width = train_config.get("phi_hidden_width", None)
         policy_layers = train_config.get("policy_layers", None)
         learning_rate = train_config.get("learning_rate", 0.0003)
         seed = train_config.get("seed", None)
@@ -215,6 +232,10 @@ class ArchitectureScalabilityRunner:
             log_path,
         ]
 
+        # Add phi-hidden-width if explicitly specified
+        if phi_hidden_width is not None:
+            cmd.extend(["--phi-hidden-width", str(phi_hidden_width)])
+
         # Add policy-layers only if explicitly specified in config
         if policy_layers_str is not None:
             cmd.extend(["--policy-layers", policy_layers_str])
@@ -269,10 +290,8 @@ class ArchitectureScalabilityRunner:
 
     def run_experiment(self, exp_name: str, exp_config: Dict[str, Any], exp_index: int, total_exps: int) -> bool:
         """Run a single training experiment."""
-        description = exp_config.get("description", exp_name)
         print(f"\n{'=' * 80}")
         print(f"[{exp_index}/{total_exps}] Experiment: {exp_name}")
-        print(f"Description: {description}")
         print(f"{'=' * 80}")
 
         cmd = self.build_train_command(exp_name, exp_config)
@@ -290,9 +309,9 @@ class ArchitectureScalabilityRunner:
             print(f"[FAIL] {exp_name} failed with exit code {e.returncode}")
             return False
 
-    def run_experiments(self, limit: Optional[int] = None) -> None:
+    def run_experiments(self, limit: Optional[int] = None, skip: Optional[int] = None) -> None:
         """Run all experiments from config sequentially."""
-        experiments = self.get_all_experiments(limit=limit)
+        experiments = self.get_all_experiments(limit=limit, skip=skip)
 
         print(f"\n{'=' * 80}")
         print(f"Running {len(experiments)} experiments (sequential mode)")
@@ -343,6 +362,12 @@ def main():
         help="Run only first N experiments (useful for testing)",
     )
     parser.add_argument(
+        "--skip",
+        type=int,
+        default=None,
+        help="Skip first N experiments",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print experiments without running them",
@@ -350,8 +375,8 @@ def main():
     parser.add_argument(
         "--tensorboard-log",
         type=str,
-        default="logs/experiments",
-        help="TensorBoard log directory",
+        default=None,
+        help="TensorBoard log directory (default: logs/{config_name})",
     )
     parser.add_argument(
         "--num-vec-envs",
@@ -412,14 +437,16 @@ def main():
     print(f"GPU/CUDA enabled: {args.use_cuda}")
     print(f"Model directory: {args.model_dir}")
     print(f"Timesteps per training: {args.total_timesteps:,}")
+    if args.skip:
+        print(f"Skip: first {args.skip} experiments")
     if args.limit:
-        print(f"Limit: first {args.limit} experiments only")
+        print(f"Limit: {args.limit} experiments")
     if args.dry_run:
         print(f"Mode: DRY RUN (no training will execute)")
     print(f"{'=' * 80}\n")
 
     # Run experiments
-    runner.run_experiments(limit=args.limit)
+    runner.run_experiments(limit=args.limit, skip=args.skip)
 
     # Print summary
     runner.print_summary()
