@@ -169,11 +169,10 @@ class ArchitectureScalabilityRunner:
         algorithm = train_config.get("algorithm", "trpo")
         n_steps = train_config.get("n_steps", None)
         batch_size = train_config.get("batch_size", None)
+        use_cuda = train_config.get("use_cuda", self.use_cuda)
 
-        # Use num_vec_envs from config if specified, otherwise fall back to CLI value
         num_vec_envs = train_config.get("num_vec_envs", self.num_vec_envs)
 
-        # Compute total_timesteps from n_iterations if specified, otherwise fall back
         n_iterations = train_config.get("n_iterations", None)
         if n_iterations is not None:
             n_steps_val = n_steps if n_steps is not None else 500
@@ -286,7 +285,7 @@ class ArchitectureScalabilityRunner:
             cmd.extend(["--break-distance-threshold", str(break_distance_threshold)])
 
         # Add GPU flag if enabled
-        if self.use_cuda:
+        if use_cuda:
             cmd.append("--use-cuda")
 
         return cmd
