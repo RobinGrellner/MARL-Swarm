@@ -1,20 +1,11 @@
 {
-  "metadata": {
-    "experiment_name": "embedding_dimension_scaling_rendezvous_core",
-    "version": "4.0",
-    "description": "Core thesis experiments: Embedding Dimension x Training Swarm Size matrix. Reduced from 70 to 20 configurations based on scientific necessity and computational feasibility. Tests dimensional reduction hypothesis across 4 training sizes and 5 embedding dimensions.",
-    "thesis_chapter": "4.2 - Dimensional Reduction via Mean Embeddings (Task 1)",
-    "task": "Rendezvous",
-    "created": "2026-02-03",
-    "core_runs": 20,
-    "estimated_total_runs": 20,
-    "estimated_runtime_hours_sequential": 92,
-    "estimated_runtime_hours_parallel_3way": "30-35",
-    "design_rationale": "This reduced matrix prioritizes scientific rigor over coverage breadth. Agent counts [4,16,50,100] span 1.5 orders of magnitude with logarithmic spacing, testing minimal through challenging swarms. Embedding dims [4,8,32,64,128] test from information bottleneck through baseline (64=Huttenrauch) to saturation regime. Single seed per config acceptable for thesis; selected highest-variance configurations for second seed if time permits. See MARL-Reviewer analysis for complete justification."
+  "matrix_parameters": {
+    "num_agents": [4, 16, 50, 100],
+    "embed_dim": [4, 8, 32, 64, 128]
   },
-
   "defaults": {
     "env_config": {
+      "environment": "rendezvous",
       "world_size": 100.0,
       "max_steps": 500,
       "obs_model": "global_basic",
@@ -36,63 +27,29 @@
       "n_iterations": 500,
       "num_vec_envs": 4,
       "learning_rate": 0.001,
+      "n_critic_updates": 5,
+      "gae_lambda": 0.98,
+      "target_kl": 0.01,
+      "cg_max_steps": 10,
       "verbose": 1
     }
   },
-
-  "matrix_parameters": {
-    "description": "Core matrix: 4 training sizes x 5 embedding dimensions x 1 seed = 20 unique configs. Auto-expanded via config_utils.py.",
-    "num_agents": [4, 16, 50, 100],
-    "embed_dim": [4, 8, 32, 64, 128],
-    "seed": [0]
-  },
-
-  "design_notes": {
-    "agent_count_selection": {
-      "description": "Agent counts [4, 16, 50, 100] were selected using logarithmic spacing across 1.5 orders of magnitude.",
-      "reasoning": [
-        "N=4: Lower anchor testing minimal neighbor aggregation (3 neighbors). Trivial regime baseline.",
-        "N=16: First significant test of mean embedding properties. 4x increase from N=4.",
-        "N=50: 2.5x the Huttenrauch baseline (N=20). Tests substantial scaling with ~49 neighbors.",
-        "N=100: 5x baseline, 25x increase from N=4. Maximum stress test and upper boundary of max_agents.",
-        "Dropped N=32: Sits between 16 and 50 without qualitative novelty. Logarithmic spacing [4,16,50,100] covers critical regimes efficiently."
-      ]
-    },
-    "embed_dim_selection": {
-      "description": "Embedding dimensions [4, 8, 32, 64, 128] test from information bottleneck to saturation.",
-      "reasoning": [
-        "d=4: Information bottleneck case. Phi network barely expands (4 vs input neigh_dim=3). Tests lower bound.",
-        "d=8: Low-dimensional regime. Modest compression of neighbor information.",
-        "d=32: Mid-range with sufficient representational capacity. Transition from constrained to sufficient.",
-        "d=64: Baseline anchor matching Huttenrauch et al. (2019) exactly. Critical for literature comparison.",
-        "d=128: High-dimensional regime testing saturation (diminishing returns hypothesis).",
-        "Dropped d=16, 256: d=16 is intermediate between 8 and 32 (refinement, not essential). d=256 tests same saturation hypothesis as 128→256 jump that 64→128 already tests."
-      ]
-    },
-    "seed_strategy": {
-      "description": "Core configs use single seed (seed=0) for computational efficiency. Extension runs prioritize variance estimation.",
-      "core_seed": 0,
-      "extension_seeds": [123],
-      "extension_priority": [
-        "(N=100, embed_dim=4): Most extreme config, highest variance expected.",
-        "(N=100, embed_dim=64): Baseline comparison at maximum scale.",
-        "(N=50, embed_dim=4): Second-most extreme, substantial variance expected."
-      ],
-      "thesis_justification": "Single seed acceptable for thesis with stable learning curves demonstrating convergence. Targeted second seed on highest-variance points maximizes statistical rigor given computational constraints."
-    }
-  },
-
   "experiments": {
-    "_example_num_agents4_embed_dim4_seed0": {
-      "description": "Minimal swarm, bottleneck embedding. Tests lower bound of mean embedding capacity.",
-      "env_config": { "num_agents": 4 },
-      "train_config": { "embed_dim": 4, "seed": 0 }
-    },
-    "_example_num_agents100_embed_dim128_seed0": {
-      "description": "Large swarm, high-dimensional embedding. Tests saturation and scalability at maximum scale.",
+    "100_agents": {
       "env_config": { "num_agents": 100 },
-      "train_config": { "embed_dim": 128, "seed": 0 }
+      "train_config": { "use_cuda": false, "num_vec_envs": 1 }
     },
-    "_abbreviated": "Full 20 core configs auto-generated from matrix_parameters by config_utils.py. Naming: num_agents{N}_embed_dim{D}_seed{S}. See metadata.design_notes for scientific justification."
+    "50_agents": {
+      "env_config": { "num_agents": 50 },
+      "train_config": { "use_cuda": true, "num_vec_envs": 1 }
+    },
+    "16_agents": {
+      "env_config": { "num_agents": 16 },
+      "train_config": { "use_cuda": true, "num_vec_envs": 4 }
+    },
+    "4_agents": {
+      "env_config": { "num_agents": 4 },
+      "train_config": { "use_cuda": true, "num_vec_envs": 8 }
+    }
   }
 }
