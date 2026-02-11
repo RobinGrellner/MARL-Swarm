@@ -1,0 +1,43 @@
+{
+  "matrix_parameters": {
+    "activation": ["relu", "tanh"],
+    "phi_layers": [1, 2, 4],
+    "phi_hidden_width": [32, 64, 128],
+    "seed": [0]
+  },
+  "defaults": {
+    "env_config": {
+      "environment": "pursuit_evasion",
+      "num_pursuers": 100,
+      "world_size": 100.0,
+      "max_steps": 1024,
+      "obs_model": "global_basic",
+      "evader_strategy": "huttenrauch",
+      "capture_radius": 2.0,
+      "evader_speed": 20.0,
+      "v_max": 10.0,
+      "omega_max": 3.14159,
+      "kinematics": "single",
+      "max_pursuers": 100,
+      "torus": true
+    },
+    "train_config": {
+      "activation": "relu",
+      "aggregation": "mean",
+      "phi_layers": 1,
+      "algorithm": "trpo",
+      "n_steps": 1024,
+      "batch_size": 128,
+      "n_iterations": 1000,
+      "num_vec_envs": 1,
+      "learning_rate": 5e-4,
+      "n_critic_updates": 3,
+      "gae_lambda": 0.98,
+      "target_kl": 0.01,
+      "cg_max_steps": 10,
+      "embed_dim": 64,
+      "use_cuda": false,
+      "verbose": 1
+    }
+  }
+}

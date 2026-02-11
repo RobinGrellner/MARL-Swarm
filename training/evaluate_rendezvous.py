@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 from stable_baselines3 import PPO
+from sb3_contrib import TRPO
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,6 +45,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--fps", type=int, default=30, help="Frames per second for rendering")
     parser.add_argument("--deterministic", action="store_true", default=True, help="Use deterministic actions")
+    parser.add_argument("--algorithm", type=str, default="trpo", choices=["ppo", "trpo"], help="Algorithm used to train the model")
     return parser.parse_args()
 
 
@@ -66,7 +68,8 @@ def evaluate(args: argparse.Namespace) -> None:
     )
 
     print(f"Loading model from {args.model_path}...")
-    model = PPO.load(args.model_path, device="cpu")
+    algo_cls = TRPO if args.algorithm == "trpo" else PPO
+    model = algo_cls.load(args.model_path, device="cpu")
     print("Model loaded successfully!")
 
     episode_returns = []

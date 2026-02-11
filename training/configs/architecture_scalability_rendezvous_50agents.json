@@ -1,7 +1,5 @@
-
 {
   "matrix_parameters": {
-    "num_agents": [4, 16, 50, 100],
     "activation": ["relu", "tanh"],
     "phi_layers": [1, 2, 4],
     "phi_hidden_width": [32, 64, 128],
@@ -10,6 +8,7 @@
   "defaults": {
     "env_config": {
       "environment": "rendezvous",
+      "num_agents": 50,
       "world_size": 100.0,
       "max_steps": 500,
       "obs_model": "global_basic",
@@ -27,34 +26,17 @@
       "phi_layers": 1,
       "algorithm": "trpo",
       "n_steps": 500,
-      "batch_size": 128,
+      "batch_size": 500,
       "n_iterations": 500,
-      "num_vec_envs": 4,
+      "num_vec_envs": 1,
       "learning_rate": 0.001,
       "n_critic_updates": 5,
       "gae_lambda": 0.98,
       "target_kl": 0.01,
       "cg_max_steps": 10,
       "embed_dim": 64,
+      "use_cuda": true,
       "verbose": 1
-    }
-  },
-  "experiments": {
-    "100_agents": {
-      "env_config": { "num_agents": 100 },
-      "train_config": { "use_cuda": false, "num_vec_envs": 1 }
-    },
-    "50_agents": {
-      "env_config": { "num_agents": 50 },
-      "train_config": { "use_cuda": true, "num_vec_envs": 1 }
-    },
-    "16_agents": {
-      "env_config": { "num_agents": 16 },
-      "train_config": { "use_cuda": true, "num_vec_envs": 4 }
-    },
-    "4_agents": {
-      "env_config": { "num_agents": 4 },
-      "train_config": { "use_cuda": true, "num_vec_envs": 8 }
     }
   }
 }

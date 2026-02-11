@@ -12,7 +12,6 @@ def expand_matrix_parameters(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]
     Expand matrix_parameters from config into individual experiment entries.
 
     Takes a config with matrix_parameters and generates all combinations.
-    Preserves pre-defined experiments in config["experiments"].
 
     Args:
         config: The config dictionary with matrix_parameters
@@ -76,12 +75,6 @@ def expand_matrix_parameters(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]
         }
 
         experiments[exp_name] = exp_config
-
-    # Add any pre-defined experiments from config (skip metadata entries)
-    existing = config.get("experiments", {})
-    for name, exp_config in existing.items():
-        if not name.startswith("_"):
-            experiments[name] = exp_config
 
     return experiments
 

@@ -378,11 +378,12 @@ def add_common_training_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--policy-layers",
         type=parse_policy_layers,
-        default="64,64",
-        help="Comma-separated list of hidden layer sizes for policy and value networks (default: 64,64)",
+        default="64",
+        help="Comma-separated list of hidden layer sizes for policy and value networks (default: 64)",
     )
     parser.add_argument("--embed-dim", type=int, default=64, help="Dimensionality of the mean embedding (default: 64)")
     parser.add_argument("--phi-layers", type=int, default=1, help="Number of hidden layers in the phi network (default: 1)")
+    parser.add_argument("--phi-hidden-width", type=int, default=None, help="Width of phi hidden layers (default: max(64, embed_dim))")
 
     # Training parameters
     parser.add_argument("--algorithm", type=str, default="trpo", choices=["ppo", "trpo"], help="RL algorithm to use (default: TRPO for paper fidelity)")
@@ -456,6 +457,7 @@ def build_embed_config(args: argparse.Namespace) -> Dict[str, Any]:
     return {
         "embed_dim": args.embed_dim,
         "phi_layers": args.phi_layers,
+        "phi_hidden_width": args.phi_hidden_width,
         "activation": args.activation,
         "aggregation": args.aggregation,
         "policy_layers": args.policy_layers,
@@ -524,6 +526,7 @@ def make_policy_kwargs(
     *,
     embed_dim: int = 64,
     phi_layers: int = 1,
+    phi_hidden_width: Optional[int] = None,
     policy_layers: Optional[List[int]] = None,
     activation: str = "relu",
     aggregation: str = "mean",
@@ -559,14 +562,15 @@ def make_policy_kwargs(
     neigh_dim = layout["neigh_dim"]
     max_neigh = layout["max_neighbours"]
 
-    # Determine hidden layer configuration for phi network: scale with embed_dim to avoid bottleneck
-    phi_hidden = [max(64, embed_dim)] * max(phi_layers, 1)
+    # Determine hidden layer configuration for phi network
+    width = phi_hidden_width if phi_hidden_width is not None else max(64, embed_dim)
+    phi_hidden = [width] * max(phi_layers, 1)
 
     # Use default policy layers if not specified
     # Scale policy width with embed_dim to avoid bottleneck for large embeddings
     if policy_layers is None:
         policy_width = max(64, embed_dim)
-        policy_layers = [policy_width, policy_width]
+        policy_layers = [policy_width]
 
     return {
         "features_extractor_class": MeanEmbeddingExtractor,
@@ -760,6 +764,7 @@ def run_training(
             layout,
             embed_dim=embed_config.get("embed_dim", 64),
             phi_layers=embed_config.get("phi_layers", 1),
+            phi_hidden_width=embed_config.get("phi_hidden_width", None),
             policy_layers=embed_config.get("policy_layers", None),
             activation=embed_config.get("activation", "relu"),
             aggregation=embed_config.get("aggregation", "mean"),
