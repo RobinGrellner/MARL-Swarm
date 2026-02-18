@@ -31,7 +31,7 @@
       "gae_lambda": 0.98,
       "target_kl": 0.01,
       "cg_max_steps": 10,
-      "use_cuda": true,
+      "use_cuda": false,
       "verbose": 1
     }
   }

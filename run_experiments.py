@@ -171,7 +171,11 @@ class ArchitectureScalabilityRunner:
         batch_size = train_config.get("batch_size", None)
         use_cuda = train_config.get("use_cuda", self.use_cuda)
 
-        num_vec_envs = train_config.get("num_vec_envs", self.num_vec_envs)
+        # CLI flag overrides config when explicitly provided
+        if self.num_vec_envs is not None:
+            num_vec_envs = self.num_vec_envs
+        else:
+            num_vec_envs = train_config.get("num_vec_envs", 8)
 
         n_iterations = train_config.get("n_iterations", None)
         if n_iterations is not None:
@@ -383,8 +387,8 @@ def main():
     parser.add_argument(
         "--num-vec-envs",
         type=int,
-        default=8,
-        help="Number of parallel environments",
+        default=None,
+        help="Number of parallel environments (overrides config when set)",
     )
     parser.add_argument(
         "--total-timesteps",
@@ -435,7 +439,7 @@ def main():
     print(f"Start time: {datetime.datetime.now()}")
     print(f"Config: {config_path}")
     print(f"TensorBoard logs: {args.tensorboard_log}")
-    print(f"Parallel environments per experiment: {args.num_vec_envs}")
+    print(f"Parallel environments per experiment: {args.num_vec_envs or 'from config'}")
     print(f"GPU/CUDA enabled: {args.use_cuda}")
     print(f"Model directory: {args.model_dir}")
     print(f"Timesteps per training: {args.total_timesteps:,}")

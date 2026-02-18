@@ -567,10 +567,8 @@ def make_policy_kwargs(
     phi_hidden = [width] * max(phi_layers, 1)
 
     # Use default policy layers if not specified
-    # Scale policy width with embed_dim to avoid bottleneck for large embeddings
     if policy_layers is None:
-        policy_width = max(64, embed_dim)
-        policy_layers = [policy_width]
+        policy_layers = [64]
 
     return {
         "features_extractor_class": MeanEmbeddingExtractor,
