@@ -222,29 +222,42 @@ class MeanEmbeddingExtractor(BaseFeaturesExtractor):
     def forward(self, observations: torch.Tensor) -> torch.Tensor:
         """Process observations and produce feature vectors.
 
+        Uses gather-process-scatter: only valid (unmasked) neighbor rows are
+        passed through the phi network, avoiding wasted computation on
+        zero-padded slots.
+
         Args:
             observations: Flattened observations of shape (batch_size, agent_obs_dim).
 
         Returns:
             Feature vectors of shape (batch_size, features_dim).
         """
-        # Each observation corresponds to a single agent: shape (batch_size, agent_obs_dim)
         batch_size = observations.shape[0]
-        # Split observation into local part, neighbour features and mask
         local = observations[:, : self.local_dim]
+
         if self.neigh_dim > 0 and self.embed_dim > 0 and self.phi is not None:
             start = self.local_dim
             end_feats = start + self.max_neigh * self.neigh_dim
             neigh_block = observations[:, start:end_feats]
             mask = observations[:, end_feats : end_feats + self.max_neigh]
-            # Reshape neighbour block to (batch, max_neigh, neigh_dim)
+
             neigh = neigh_block.view(batch_size, self.max_neigh, self.neigh_dim)
-            # Compute phi for each neighbour
-            phi_out = self.phi(neigh)
-            # Aggregate using configured method
+
+            flat_neigh = neigh.reshape(batch_size * self.max_neigh, self.neigh_dim)
+            flat_mask = mask.reshape(batch_size * self.max_neigh)
+
+            valid_idx = flat_mask.nonzero(as_tuple=False).squeeze(1)
+
+            if valid_idx.numel() > 0:
+                valid_feats = flat_neigh[valid_idx]
+                valid_embeds = self.phi(valid_feats)
+                flat_out = flat_neigh.new_zeros(batch_size * self.max_neigh, self.embed_dim)
+                flat_out[valid_idx] = valid_embeds
+            else:
+                flat_out = flat_neigh.new_zeros(batch_size * self.max_neigh, self.embed_dim)
+
+            phi_out = flat_out.view(batch_size, self.max_neigh, self.embed_dim)
             phi_aggregated = self._aggregate(phi_out, mask)
-            # Concatenate local features and aggregated embedding
             return torch.cat([local, phi_aggregated], dim=1)
         else:
-            # No neighbour features present
             return local
