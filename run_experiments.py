@@ -1,55 +1,3 @@
-#!/usr/bin/env python3
-"""
-General-purpose experiment runner for MARL swarm training.
-
-Runs a suite of experiments from a JSON config file. Supports matrix parameter
-expansion to automatically generate multiple experiment configurations from a
-single config template. Each experiment trains a policy and logs results to TensorBoard.
-
-Supports:
-- Rendezvous task (training/train_rendezvous.py)
-- Pursuit-Evasion task (training/train_pursuit_evasion.py)
-- Any custom training script with compatible command-line interface
-
-Features:
-- Matrix parameter expansion: Automatically expands combinations of parameters
-- Auto-naming: Generates experiment names from parameter combinations
-- Sequential execution: Runs experiments one at a time
-- TensorBoard logging: Organizes logs per experiment
-- Dry-run mode: Preview experiments before running
-
-Usage:
-    python run_experiments.py --config CONFIG.json --train-script SCRIPT.py [options]
-
-Examples:
-    # Run all experiments from embedding_scaling_rendezvous.json
-    python run_experiments.py \\
-      --config training/configs/embedding_scaling_rendezvous.json \\
-      --num-vec-envs 8
-
-    # Run pursuit-evasion experiments
-    python run_experiments.py \\
-      --config training/configs/embedding_scaling_pursuit_evasion.json \\
-      --train-script training/train_pursuit_evasion.py \\
-      --num-vec-envs 8
-
-    # Test first 3 experiments without running
-    python run_experiments.py \\
-      --config training/configs/embedding_scaling_rendezvous.json \\
-      --limit 3 --dry-run
-
-Options:
-    --config PATH               Config file (required)
-    --train-script PATH         Training script to use (default: training/train_rendezvous.py)
-    --num-vec-envs N            Number of parallel environments (default: 8)
-    --total-timesteps N         Training duration in timesteps (default: 2000000)
-    --tensorboard-log PATH      Custom TensorBoard log directory (default: logs/experiments)
-    --limit N                   Run only first N experiments (for testing)
-    --dry-run                   Print experiments without running them
-    --use-cuda                  Enable GPU/CUDA training for all experiments
-    --model-dir PATH            Directory to save trained models (default: models/)
-"""
-
 import json
 import subprocess
 import argparse
@@ -58,12 +6,6 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import datetime
 import io
-
-# Force UTF-8 output on Windows
-if sys.stdout.encoding != 'utf-8':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
-# Import config expansion utility
 from training.config_utils import load_and_expand_config
 
 
@@ -77,7 +19,6 @@ class ArchitectureScalabilityRunner:
         num_vec_envs: int = 8,
         total_timesteps: int = 2000000,
         dry_run: bool = False,
-        train_script: str = "training/train_rendezvous.py",
         use_cuda: bool = False,
         model_dir: Optional[str] = None,
     ):
@@ -90,11 +31,9 @@ class ArchitectureScalabilityRunner:
         self.num_vec_envs = num_vec_envs
         self.total_timesteps = total_timesteps
         self.dry_run = dry_run
-        self.train_script = train_script
         self.use_cuda = use_cuda
         self.model_dir = model_dir or "models"
 
-        # Load config and expand matrix parameters
         self.config = load_and_expand_config(str(self.config_path))
 
         self.experiments = self.config.get("experiments", {})
@@ -102,18 +41,11 @@ class ArchitectureScalabilityRunner:
         self.completed_experiments = 0
         self.failed_experiments = 0
 
-        # Auto-detect training script from environment config if using default
-        if train_script == "training/train_rendezvous.py":  # Using default
-            default_env_config = self.config.get("defaults", {}).get("env_config", {})
-            environment = default_env_config.get("environment", "rendezvous")
-            if environment == "pursuit_evasion":
-                self.train_script = "training/train_pursuit_evasion.py"
-
     def get_all_experiments(self, limit: Optional[int] = None, skip: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
         """Get all experiments from config, optionally limited and skipping first N."""
         experiments = {
             name: config for name, config in self.experiments.items()
-            if not name.startswith("_")  # Skip metadata entries
+            if not name.startswith("_")
         }
 
         items = list(experiments.items())
@@ -127,168 +59,97 @@ class ArchitectureScalabilityRunner:
         return dict(items)
 
     def build_train_command(self, exp_name: str, exp_config: Dict[str, Any]) -> List[str]:
-        """Build training command from experiment config.
+        """Build training command from experiment config."""
+        env_config = exp_config.get("env_config", {})
+        train_config = exp_config.get("train_config", {})
 
-        Merges experiment config with defaults from config file.
-        Priority: experiment config > defaults section > runner hardcoded defaults
-        """
-        # Get defaults from config file if available
-        config_defaults = self.config.get("defaults", {})
-        default_env_config = config_defaults.get("env_config", {})
-        default_train_config = config_defaults.get("train_config", {})
-
-        # Merge: defaults first, then experiment-specific overrides
-        env_config = {**default_env_config, **exp_config.get("env_config", {})}
-        train_config = {**default_train_config, **exp_config.get("train_config", {})}
-
-        # Extract values with fallback to runner hardcoded defaults
-        # Use num_pursuers for PE, num_agents for Rendezvous
-        num_agents = env_config.get("num_pursuers", env_config.get("num_agents", 4))
-        world_size = env_config.get("world_size", 10.0)
-        max_steps = env_config.get("max_steps", 100)
-        obs_model = env_config.get("obs_model", "local_basic")
-        comm_radius = env_config.get("comm_radius", 8.0)
-        torus = env_config.get("torus", False)
-        break_distance_threshold = env_config.get("break_distance_threshold", None)
-        v_max = env_config.get("v_max", 1.0)
-        omega_max = env_config.get("omega_max", 1.0)
-
-        # PE-specific parameters
-        capture_radius = env_config.get("capture_radius", 0.5)
-        evader_speed = env_config.get("evader_speed", 1.0)
-        evader_strategy = env_config.get("evader_strategy", "huttenrauch")
-
-        activation = train_config.get("activation", "relu")
-        aggregation = train_config.get("aggregation", "mean")
-        embed_dim = train_config.get("embed_dim", 64)
-        phi_layers = train_config.get("phi_layers", 1)
-        phi_hidden_width = train_config.get("phi_hidden_width", None)
-        policy_layers = train_config.get("policy_layers", None)
-        learning_rate = train_config.get("learning_rate", 0.0003)
-        seed = train_config.get("seed", None)
-        algorithm = train_config.get("algorithm", "trpo")
-        n_steps = train_config.get("n_steps", None)
-        batch_size = train_config.get("batch_size", None)
-        use_cuda = train_config.get("use_cuda", self.use_cuda)
-
-        # CLI flag overrides config when explicitly provided
-        if self.num_vec_envs is not None:
-            num_vec_envs = self.num_vec_envs
+        environment = env_config.get("environment", "rendezvous")
+        if environment == "pursuit_evasion":
+            train_script = "training/train_pursuit_evasion.py"
+            agent_param = "--num-pursuers"
+            num_agents = env_config.get("num_pursuers")
         else:
-            num_vec_envs = train_config.get("num_vec_envs", 8)
+            train_script = "training/train_rendezvous.py"
+            agent_param = "--num-agents"
+            num_agents = env_config.get("num_agents")
 
-        n_iterations = train_config.get("n_iterations", None)
+        num_vec_envs = self.num_vec_envs if self.num_vec_envs is not None else train_config.get("num_vec_envs")
+
+        n_iterations = train_config.get("n_iterations")
         if n_iterations is not None:
-            n_steps_val = n_steps if n_steps is not None else 500
-            total_timesteps = n_iterations * n_steps_val * num_agents * num_vec_envs
+            n_steps = train_config.get("n_steps", 500)
+            total_timesteps = n_iterations * n_steps * num_agents * num_vec_envs
         else:
             total_timesteps = train_config.get("total_timesteps", self.total_timesteps)
 
-        # Extract environment parameters for scale invariance
-        max_pursuers = env_config.get("max_pursuers", None)
-
-        # Convert policy_layers to comma-separated string (only if explicitly set)
-        policy_layers_str = ",".join(str(x) for x in policy_layers) if policy_layers is not None else None
-
-        # Build model path
         model_path = f"{self.model_dir}/{exp_name}.zip"
-
-        # Build log path
         log_path = f"{self.tensorboard_log}/{exp_name}"
-
-        # Determine agent parameter name based on script
-        agent_param = "--num-pursuers" if "pursuit" in self.train_script else "--num-agents"
 
         cmd = [
             "uv",
             "run",
             "python",
-            self.train_script,
+            train_script,
             agent_param,
             str(num_agents),
-            "--world-size",
-            str(world_size),
-            "--max-steps",
-            str(max_steps),
-            "--obs-model",
-            obs_model,
-            "--activation",
-            activation,
-            "--aggregation",
-            aggregation,
-            "--embed-dim",
-            str(embed_dim),
-            "--phi-layers",
-            str(phi_layers),
-            "--learning-rate",
-            str(learning_rate),
-            "--v-max",
-            str(v_max),
-            "--omega-max",
-            str(omega_max),
-            "--total-timesteps",
-            str(total_timesteps),
-            "--num-vec-envs",
-            str(num_vec_envs),
-            "--algorithm",
-            algorithm,
             "--model-path",
             model_path,
             "--tensorboard-log",
             log_path,
         ]
 
-        # Add phi-hidden-width if explicitly specified
-        if phi_hidden_width is not None:
-            cmd.extend(["--phi-hidden-width", str(phi_hidden_width)])
+        env_params = {
+            "--world-size": env_config.get("world_size"),
+            "--max-steps": env_config.get("max_steps"),
+            "--obs-model": env_config.get("obs_model"),
+            "--v-max": env_config.get("v_max"),
+            "--omega-max": env_config.get("omega_max"),
+        }
+        for flag, value in env_params.items():
+            if value is not None:
+                cmd.extend([flag, str(value)])
 
-        # Add policy-layers only if explicitly specified in config
-        if policy_layers_str is not None:
+        train_params = {
+            "--activation": train_config.get("activation"),
+            "--aggregation": train_config.get("aggregation"),
+            "--embed-dim": train_config.get("embed_dim"),
+            "--phi-layers": train_config.get("phi_layers"),
+            "--learning-rate": train_config.get("learning_rate"),
+            "--algorithm": train_config.get("algorithm"),
+            "--total-timesteps": total_timesteps,
+            "--num-vec-envs": num_vec_envs,
+        }
+        for flag, value in train_params.items():
+            if value is not None:
+                cmd.extend([flag, str(value)])
+
+        optional_params = {
+            "--phi-hidden-width": train_config.get("phi_hidden_width"),
+            "--comm-radius": env_config.get("comm_radius"),
+            "--max-pursuers": env_config.get("max_pursuers"),
+            "--max-agents": env_config.get("max_agents"),
+            "--capture-radius": env_config.get("capture_radius"),
+            "--evader-speed": env_config.get("evader_speed"),
+            "--evader-strategy": env_config.get("evader_strategy"),
+            "--seed": train_config.get("seed"),
+            "--n-steps": train_config.get("n_steps"),
+            "--batch-size": train_config.get("batch_size"),
+            "--break-distance-threshold": env_config.get("break_distance_threshold"),
+            "--kinematics": env_config.get("kinematics"),
+        }
+        for flag, value in optional_params.items():
+            if value is not None:
+                cmd.extend([flag, str(value)])
+
+        policy_layers = train_config.get("policy_layers")
+        if policy_layers is not None:
+            policy_layers_str = ",".join(str(x) for x in policy_layers)
             cmd.extend(["--policy-layers", policy_layers_str])
 
-        # Add max_pursuers for scale invariance if specified (PE)
-        if max_pursuers is not None:
-            cmd.extend(["--max-pursuers", str(max_pursuers)])
-
-        # Add max_agents for scale invariance if specified (Rendezvous)
-        max_agents = env_config.get("max_agents", None)
-        if max_agents is not None:
-            cmd.extend(["--max-agents", str(max_agents)])
-
-        # Add comm-radius if explicitly specified (None means use env defaults: world_size for global, 8.0 for local)
-        if comm_radius is not None:
-            cmd.extend(["--comm-radius", str(comm_radius)])
-
-        # Add PE-specific parameters if this is a pursuit-evasion task
-        if "pursuit" in self.train_script:
-            cmd.extend([
-                "--capture-radius",
-                str(capture_radius),
-                "--evader-speed",
-                str(evader_speed),
-                "--evader-strategy",
-                evader_strategy,
-            ])
-
-        # Add seed if specified
-        if seed is not None:
-            cmd.extend(["--seed", str(seed)])
-
-        # Add algorithm-specific hyperparameters if specified
-        if n_steps is not None:
-            cmd.extend(["--n-steps", str(n_steps)])
-
-        if batch_size is not None:
-            cmd.extend(["--batch-size", str(batch_size)])
-
-        if torus:
+        if env_config.get("torus"):
             cmd.append("--torus")
 
-        # Add break-distance-threshold if specified (Rendezvous early stopping)
-        if break_distance_threshold is not None:
-            cmd.extend(["--break-distance-threshold", str(break_distance_threshold)])
-
-        # Add GPU flag if enabled
+        use_cuda = train_config.get("use_cuda", self.use_cuda)
         if use_cuda:
             cmd.append("--use-cuda")
 
@@ -397,12 +258,6 @@ def main():
         help="Training duration in timesteps",
     )
     parser.add_argument(
-        "--train-script",
-        type=str,
-        default="training/train_rendezvous.py",
-        help="Training script to use (train_rendezvous.py or train_pursuit_evasion.py)",
-    )
-    parser.add_argument(
         "--use-cuda",
         action="store_true",
         help="Enable GPU/CUDA training for all experiments",
@@ -427,7 +282,6 @@ def main():
         num_vec_envs=args.num_vec_envs,
         total_timesteps=args.total_timesteps,
         dry_run=args.dry_run,
-        train_script=args.train_script,
         use_cuda=args.use_cuda,
         model_dir=args.model_dir,
     )
