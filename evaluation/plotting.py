@@ -43,14 +43,9 @@ def plot_scalability_curve(
     swarm_sizes = sorted(results.keys())
     means = [results[size][metric] for size in swarm_sizes]
 
-    # Get standard deviation if available
     std_key = metric.replace("mean_", "std_")
-    if std_key in results[swarm_sizes[0]]:
-        stds = [results[size][std_key] for size in swarm_sizes]
-    else:
-        stds = None
+    stds = [results[size][std_key] for size in swarm_sizes] if std_key in results[swarm_sizes[0]] else None
 
-    # Create figure
     fig, ax = plt.subplots(figsize=figsize)
 
     # Plot with error bars if std is available
@@ -76,26 +71,21 @@ def plot_scalability_curve(
             label=metric.replace("_", " ").title(),
         )
 
-    # Formatting
     ax.set_xlabel("Number of Agents", fontsize=12, fontweight="bold")
     ax.set_ylabel(ylabel or metric.replace("_", " ").title(), fontsize=12, fontweight="bold")
     ax.set_title(title or f"{metric.replace('_', ' ').title()} vs Swarm Size", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.legend(fontsize=10)
-
-    # Set x-axis to show all swarm sizes
     ax.set_xticks(swarm_sizes)
 
     plt.tight_layout()
 
-    # Save if path provided
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
-    # Show if requested
     if show:
         plt.show()
 
@@ -139,7 +129,6 @@ def plot_multiple_metrics(
 
         means = [results[size][metric] for size in swarm_sizes]
 
-        # Get standard deviation if available
         std_key = metric.replace("mean_", "std_")
         if std_key in results[swarm_sizes[0]]:
             stds = [results[size][std_key] for size in swarm_sizes]
@@ -166,20 +155,17 @@ def plot_multiple_metrics(
         ax.grid(True, alpha=0.3, linestyle="--")
         ax.set_xticks(swarm_sizes)
 
-    # Hide unused subplots
     for idx in range(n_metrics, len(axes)):
         axes[idx].axis("off")
 
     plt.tight_layout()
 
-    # Save if path provided
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
-    # Show if requested
     if show:
         plt.show()
 
@@ -215,7 +201,6 @@ def plot_comparison(
         swarm_sizes = sorted(results.keys())
         means = [results[size][metric] for size in swarm_sizes]
 
-        # Get standard deviation if available
         std_key = metric.replace("mean_", "std_")
         if std_key in results[swarm_sizes[0]]:
             stds = [results[size][std_key] for size in swarm_sizes]
@@ -240,7 +225,6 @@ def plot_comparison(
                 label=exp_name,
             )
 
-    # Formatting
     ax.set_xlabel("Number of Agents", fontsize=12, fontweight="bold")
     ax.set_ylabel(ylabel or metric.replace("_", " ").title(), fontsize=12, fontweight="bold")
     ax.set_title(title or f"Comparison: {metric.replace('_', ' ').title()}", fontsize=14, fontweight="bold")
@@ -249,14 +233,12 @@ def plot_comparison(
 
     plt.tight_layout()
 
-    # Save if path provided
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ Saved figure to {save_path}")
 
-    # Show if requested
     if show:
         plt.show()
 
@@ -278,16 +260,13 @@ def save_results_to_json(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Convert results to serializable format
     output_data = {}
     for size, metrics in results.items():
         output_data[f"{size}_agents"] = metrics
 
-    # Add metadata if provided
     if metadata:
         output_data["metadata"] = metadata
 
-    # Save to JSON
     with open(output_path, "w") as f:
         json.dump(output_data, f, indent=2)
 
@@ -308,10 +287,8 @@ def load_results_from_json(json_path: Path) -> Tuple[Dict[int, Dict[str, float]]
     with open(json_path) as f:
         data = json.load(f)
 
-    # Extract metadata if present
     metadata = data.pop("metadata", None)
 
-    # Convert back to integer keys
     results = {}
     for key, value in data.items():
         if key.endswith("_agents"):
@@ -338,7 +315,6 @@ def create_scalability_report(
 
     print(f"\nGenerating scalability report in {output_dir}/...")
 
-    # Plot 1: Mean reward
     plot_scalability_curve(
         results,
         metric="mean_reward",
@@ -348,7 +324,6 @@ def create_scalability_report(
         show=False,
     )
 
-    # Plot 2: Success rate
     plot_scalability_curve(
         results,
         metric="success_rate",
@@ -358,7 +333,6 @@ def create_scalability_report(
         show=False,
     )
 
-    # Plot 3: Final max distance
     plot_scalability_curve(
         results,
         metric="mean_final_max_dist",
@@ -368,7 +342,6 @@ def create_scalability_report(
         show=False,
     )
 
-    # Plot 4: Multiple metrics overview
     plot_multiple_metrics(
         results,
         metrics=["mean_reward", "success_rate", "mean_final_max_dist", "mean_length"],
@@ -376,7 +349,6 @@ def create_scalability_report(
         show=False,
     )
 
-    # Save results to JSON
     save_results_to_json(
         results,
         output_path=output_dir / f"{experiment_name}_results.json",

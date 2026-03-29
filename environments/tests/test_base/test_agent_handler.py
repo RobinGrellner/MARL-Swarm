@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import math
+import time
 from environments.base.agent_handler import AgentHandler
 
 
@@ -488,8 +489,6 @@ class TestPerformance:
 
     def test_large_scale_movement(self, performance_config):
         """Test performance with many agents."""
-        import time
-
         handler = AgentHandler(**performance_config)
         handler.initialize_random_positions(100.0)
 

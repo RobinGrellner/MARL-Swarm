@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import argparse
 from typing import Any, Dict, Optional, Tuple
 from stable_baselines3.common.base_class import BaseAlgorithm
 
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 
-# Import the generic training function
 from training.common_train_utils import run_training
 
 
@@ -60,8 +60,6 @@ def run_training_rendezvous(
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Run a configurable PPO training on RendezvousEnv")
     parser.add_argument("--num-agents", type=int, default=4, help="Number of agents")
     parser.add_argument("--world-size", type=float, default=10.0, help="Side length of the world")
@@ -98,7 +96,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Build environment configuration
     env_params = {
         "num_agents": args.num_agents,
         "world_size": args.world_size,
@@ -121,7 +118,6 @@ if __name__ == "__main__":
 
     env = RendezvousEnv(**env_params)
 
-    # Run training
     model, info = run_training_rendezvous(
         env,
         embed_config,
@@ -133,7 +129,6 @@ if __name__ == "__main__":
         save_path=args.model_path,
     )
 
-    # Output basic summary
     print("\nTraining completed!")
     print(f"Model saved to: {args.model_path}")
     if not args.no_normalize:

@@ -62,7 +62,6 @@ class BaseEnv(ABC, ParallelEnv):
     ) -> None:
         super().__init__()
 
-        # Agent Handler setup
         self.agent_handler = AgentHandler(
             num_agents=num_agents,
             kinematics=kinematics,
@@ -73,7 +72,6 @@ class BaseEnv(ABC, ParallelEnv):
             dt=dt,
         )
 
-        # Setting up Necessary Environment variables
         self.agent_names = self.agent_handler.agents
         self.agents = self.agent_names
         self.possible_agents = self.agent_names
@@ -82,8 +80,7 @@ class BaseEnv(ABC, ParallelEnv):
         self.world_size = world_size
         self.render_mode = render_mode
 
-        # Random number generator (local state instead of global)
-        self._rng = np.random.default_rng()
+        self._rng = np.random.default_rng()  # local state, avoids affecting global RNG
 
         self._setup_spaces()
 
@@ -113,16 +110,13 @@ class BaseEnv(ABC, ParallelEnv):
         - Velocities are set to zero
         - Step counter is cleared
         """
-        # Use local RNG for reproducibility without affecting global state
         if seed is not None:
             self._rng = np.random.default_rng(seed)
 
         self.step_count = 0
 
-        # Specific resets
         self._reset_agents()
         self._intermediate_steps()
-        # All Agents are active at the Beginning of the episode
         self.agents = list(self.agent_names)
         return self._get_observations(), self._get_infos()
 
@@ -145,7 +139,6 @@ class BaseEnv(ABC, ParallelEnv):
         truncations = self._check_truncations()
         infos = self._get_infos()
 
-        # Update step count
         self.step_count += 1
         if self.step_count >= self.max_steps:
             for agent in self.agents:
@@ -182,8 +175,6 @@ class BaseEnv(ABC, ParallelEnv):
         Action space is normalized to [-1, 1] for both dimensions.
         Scaling to physical units (v_max, omega_max, etc.) is handled in AgentHandler._clean_actions.
         """
-        # Normalized action space [-1, 1] for both single and double integrator
-        # Physical scaling happens in AgentHandler._clean_actions
         low = np.array([-1.0, -1.0], dtype=np.float32)
         high = np.array([1.0, 1.0], dtype=np.float32)
 
@@ -193,19 +184,16 @@ class BaseEnv(ABC, ParallelEnv):
 
         self._observation_space = self._get_observation_space()
 
-    # Abstract methods for setup
     @abstractmethod
     def _get_observation_space(self) -> Dict[str, spaces.Box]:
         """Logic on how agents observe their surroundings."""
         raise NotImplementedError
 
-    # Abstract methods for reset
     @abstractmethod
     def _reset_agents(self) -> None:
         """Logic for resetting the agents."""
         raise NotImplementedError
 
-    # Abstract methods for steps
     @abstractmethod
     def _calculate_rewards(self, actions) -> dict:
         """Logic for calculating the rewards."""
@@ -243,5 +231,5 @@ class BaseEnv(ABC, ParallelEnv):
 
     @abstractmethod
     def _close(self):
-        """Close the Envorinment"""
+        """Close the Environment."""
         raise NotImplementedError

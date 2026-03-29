@@ -147,7 +147,8 @@ def compute_observations_vectorized(
     # Step 5: Compute local features (wall distance and bearing)
     if torus:
         wall_dists = np.full(num_agents, world_size, dtype=np.float32)
-        wall_bearings = np.zeros(num_agents, dtype=np.float32)
+        wall_bearings_cos = np.ones(num_agents, dtype=np.float32)
+        wall_bearings_sin = np.zeros(num_agents, dtype=np.float32)
     else:
         # Vectorized wall distance computation
         dx_left = positions[:, 0]

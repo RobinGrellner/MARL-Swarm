@@ -25,7 +25,8 @@ import torch
 import numpy as np
 import time
 from collections import deque
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList
+from stable_baselines3.common.logger import TensorBoardOutputFormat
 import psutil
 import gc
 import os
@@ -161,7 +162,6 @@ class IterationCounterCallback(BaseCallback):
         """Get the SummaryWriter from SB3's TensorBoard output format."""
         if self._writer is not None:
             return self._writer
-        from stable_baselines3.common.logger import TensorBoardOutputFormat
         for fmt in self.logger.output_formats:
             if isinstance(fmt, TensorBoardOutputFormat):
                 self._writer = fmt.writer
@@ -226,8 +226,6 @@ class CheckpointCallback(BaseCallback):
         self.save_path = save_path
         self.last_save_step = 0
 
-        # Create save directory if it doesn't exist
-        import os
         os.makedirs(save_path, exist_ok=True)
 
     def _on_step(self) -> bool:
@@ -605,7 +603,6 @@ def setup_model(
     # (ConcatVecEnv doesn't support seed() method, so we seed globally instead)
     seed = algo_params.pop("seed", None)
     if seed is not None:
-        import numpy as np
         np.random.seed(seed)
         torch.manual_seed(seed)
 
@@ -778,8 +775,6 @@ def run_training(
         model = setup_model(vec_env, policy_kwargs, default_params, algorithm=algorithm)
 
     # 6. Create callbacks for training
-    from stable_baselines3.common.callbacks import CallbackList
-
     metrics_callback = MALRMetricsCallback(verbose=0)
     iteration_callback = IterationCounterCallback(verbose=0)
     memory_callback = MemoryDiagnosticCallback(verbose=1, log_every_n_rollouts=10)

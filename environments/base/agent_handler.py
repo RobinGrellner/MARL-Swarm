@@ -23,12 +23,11 @@ class AgentHandler:
         self.omega_max = omega_max
         self.acc_v_max = acc_v_max
         self.acc_omega_max = acc_omega_max
-        self.dt = dt  # Time step for integration
+        self.dt = dt
         self.agents: List[str] = [f"agent_{i}" for i in range(self.num_agents)]
 
         self._sanity_check()
 
-        # Internal state
         self.positions: np.ndarray  # shape (num_agents, 2)
         self.linear_vels: np.ndarray  # shape (num_agents,)
         self.angular_vels: np.ndarray  # shape (num_agents,)
@@ -65,13 +64,10 @@ class AgentHandler:
         # Convert actions to array in the same order as self.agents for handling
         clean_actions = np.array([actions[agent] for agent in self.agents], dtype=np.float32)
 
-        # Clip normalized actions to [-1, 1] and scale to physical units based on kinematics mode
         if self.kinematics == "single":
-            # Single integrator: actions are normalized [-1, 1] scaled to velocities
             clean_actions[:, 0] = np.clip(clean_actions[:, 0], -1.0, 1.0) * self.v_max
             clean_actions[:, 1] = np.clip(clean_actions[:, 1], -1.0, 1.0) * self.omega_max
         else:  # double integrator
-            # Double integrator: actions are normalized [-1, 1] scaled to accelerations
             clean_actions[:, 0] = np.clip(clean_actions[:, 0], -1.0, 1.0) * self.acc_v_max
             clean_actions[:, 1] = np.clip(clean_actions[:, 1], -1.0, 1.0) * self.acc_omega_max
         return clean_actions
@@ -88,25 +84,19 @@ class AgentHandler:
         lin_acs = actions_array[:, 0]
         ang_acs = actions_array[:, 1]
 
-        # Update velocities based on kinematics
         if self.kinematics == "single":
-            # Single integrator: actions directly set velocities
             self.linear_vels = lin_acs
             self.angular_vels = ang_acs
         else:
-            # Double integrator: actions are accelerations
             self.linear_vels = np.clip(self.linear_vels + lin_acs * self.dt, -self.v_max, self.v_max)
             self.angular_vels = np.clip(self.angular_vels + ang_acs * self.dt, -self.omega_max, self.omega_max)
 
-        # Update orientations with time step
         self.orientations = self.orientations + self.angular_vels * self.dt
         self.orientations = (self.orientations + math.pi) % (2 * math.pi) - math.pi
 
-        # Compute cartesian displacements with time step
         dx = (self.linear_vels * np.cos(self.orientations) * self.dt).astype(np.float32)
         dy = (self.linear_vels * np.sin(self.orientations) * self.dt).astype(np.float32)
 
-        # Update positions
         self.positions[:, 0] = self.positions[:, 0] + dx
         self.positions[:, 1] = self.positions[:, 1] + dy
 

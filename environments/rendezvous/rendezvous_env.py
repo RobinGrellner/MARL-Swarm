@@ -41,14 +41,12 @@ class RendezvousEnv(BaseEnv):
         max_agents: Optional[int] = None,
         dt: float = 0.1,
     ):
-        # Store rendezvous-specific parameters needed before base init
         self.csv_log_path = csv_log_path
         self.obs_model = obs_model.lower() if obs_model is not None else "global_basic"
         self.comm_radius = comm_radius
         self.break_distance_threshold = break_distance_threshold
         self.max_agents = max_agents if max_agents is not None else num_agents
 
-        # Initialize base environment
         super().__init__(
             num_agents=num_agents,
             world_size=world_size,
@@ -63,22 +61,14 @@ class RendezvousEnv(BaseEnv):
             dt=dt,
         )
 
-        # Precompute constants for reward
         n = num_agents
         self.dc: float = world_size
         self.alpha: float = -1.0 / ((n * (n - 1) / 2.0) * self.dc)
         self.beta: float = -1e-3
 
-        # Default comm_radius == world size
         if self.comm_radius is None:
             self.comm_radius = world_size
 
-        # Precompute an array of indices for neighbour iteration.
-        self._neighbour_indices: List[List[int]] = [
-            [j for j in range(self.agent_handler.num_agents) if j != i] for i in range(self.agent_handler.num_agents)
-        ]
-
-        # Pygame-Initialisation
         self.window_size = 600
         self.screen = None
         self.clock = None
@@ -88,7 +78,6 @@ class RendezvousEnv(BaseEnv):
         self._cached_distances: Optional[np.ndarray] = None
         self._cached_diff: Optional[np.ndarray] = None
 
-    # Methods for setup
     def _get_observation_space(self):
         """Define an observation space for each agent.
         Depending on the obs_model, the observation contains a block of
@@ -118,7 +107,6 @@ class RendezvousEnv(BaseEnv):
             obs_low = np.concatenate([pos_low, v_low, w_low, ori_low], dtype=np.float32)
             obs_high = np.concatenate([pos_high, v_high, w_high, ori_high], dtype=np.float32)
 
-            # "Save" dimensions
             self._local_feature_dim = base_dim
             self._neighbour_feature_dim = 0
             self._max_neighbours = 0
@@ -144,7 +132,6 @@ class RendezvousEnv(BaseEnv):
         else:
             raise ValueError(f"Unknown observation model: {self.obs_model}")
 
-        # Save dimensions
         self._neighbour_feature_dim = neighbour_feature_dim
         self._local_feature_dim = local_feature_dim
         # Use max_agents to size observations for scale-invariant learning
@@ -336,16 +323,13 @@ class RendezvousEnv(BaseEnv):
         distances = self._cached_distances
         n = len(distances)
 
-        # Extract upper triangle (avoid double-counting and self-distances)
         upper_tri_indices = np.triu_indices(n, k=1)
         pairwise_dists = distances[upper_tri_indices]
 
-        # Clip and sum
         clipped_dists = np.minimum(pairwise_dists, self.dc)
         total_distance = np.sum(clipped_dists)
         reward_distance = self.alpha * total_distance
 
-        # Action penalty (vectorized)
         reward_action = 0.0
         if actions is not None:
             action_array = np.array([actions[agent] for agent in self.agent_names], dtype=np.float32)
@@ -367,13 +351,10 @@ class RendezvousEnv(BaseEnv):
         terminations = {name: False for name in self.agent_names}
 
         if self.break_distance_threshold is not None:
-            # Use cached distance matrix (computed once in _intermediate_steps)
             assert self._cached_distances is not None, "Distance matrix not cached!"
             distances = self._cached_distances
-            # Maximum pairwise distance (ignoring diagonal self-distances)
             max_pairwise = np.max(distances)
 
-            # If all agents are within threshold, terminate successfully
             if max_pairwise < self.break_distance_threshold:
                 terminations = {name: True for name in self.agent_names}
 
@@ -393,7 +374,6 @@ class RendezvousEnv(BaseEnv):
         mean_pos = np.mean(positions, axis=0)
         dists = np.linalg.norm(positions - mean_pos, axis=1)
 
-        # Use cached distance matrix for maximum pairwise distance (computed once in _intermediate_steps)
         assert self._cached_distances is not None, "Distance matrix not cached!"
         max_pairwise = float(np.max(self._cached_distances))
 
@@ -431,7 +411,6 @@ class RendezvousEnv(BaseEnv):
             return
         self.__render_setup()
         self.__render_agents()
-        # Display step count
         if self._font is not None:
             text_surface = self._font.render(f"Steps: {self.step_count}", True, (0, 0, 0))
             assert self.screen is not None
@@ -513,18 +492,12 @@ if __name__ == "__main__":
         v_max=10,
         omega_max=1.0,
     )
-    # Reset to obtain the initial observations
     observations, infos = env.reset()
     try:
-        # Execute at most `max_steps` steps
         for _ in range(env.max_steps):
-            # Sample a random action for each agent
             actions = {agent: env.action_spaces[agent].sample() for agent in env.agents}
-            # Render the current state (a no‑op when render_mode != 'human')
             env.render()
-            # Apply actions and collect feedback
             observations, rewards, terminations, truncations, infos = env.step(actions)
-            # Stop early if any termination or truncation condition is met
             if any(terminations.values()) or any(truncations.values()):
                 break
     finally:

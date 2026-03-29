@@ -44,10 +44,8 @@ def parse_args() -> argparse.Namespace:
         help="Maximum number of agents to size the observation space for scale invariance",
     )
 
-    # Common training and architecture parameters (shared across all scripts)
     add_common_training_args(parser)
 
-    # Override default model path for rendezvous with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     parser.set_defaults(model_path=f"models/rv_{timestamp}.zip")
 
@@ -57,7 +55,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    # Create environment
     env = RendezvousEnv(
         num_agents=args.num_agents,
         world_size=args.world_size,
@@ -72,7 +69,6 @@ def main() -> None:
         max_agents=args.max_agents,
     )
 
-    # Build algorithm parameters and embedding configuration from CLI args
     algo_params = build_algo_params(args, args.algorithm)
     embed_config = build_embed_config(args)
 
@@ -93,7 +89,6 @@ def main() -> None:
     print(f"  Phi Layers: {args.phi_layers}")
     print(f"{'=' * 60}\n")
 
-    # Train model using utility function
     model, info = run_training_rendezvous(
         env=env,
         embed_config=embed_config,

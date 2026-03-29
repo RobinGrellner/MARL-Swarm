@@ -8,8 +8,8 @@ the evader follows a scripted policy (can be extended to be trainable).
 
 from __future__ import annotations
 
-import functools
 import numpy as np
+import pygame
 from gymnasium import spaces
 from typing import Dict, Tuple, Optional
 
@@ -78,7 +78,6 @@ class PursuitEvasionEnv(BaseEnv):
         fps: int = 20,
         torus: bool = False,
     ):
-        # Validate parameters
         if num_pursuers <= 0:
             raise ValueError("num_pursuers must be > 0")
         if world_size <= 0:
@@ -112,18 +111,14 @@ class PursuitEvasionEnv(BaseEnv):
         # Always use comm_radius / 2 (Hüttenrauch et al. 2019)
         self.obs_radius = self.comm_radius / 2.0
 
-        # Evader state (managed separately from pursuers)
         self.evader_pos = np.zeros(2, dtype=np.float32)
         self.evader_vel = 0.0
         self.evader_orientation = 0.0
 
         # Cache for evader distances (computed once per step, reused in rewards/terminations/infos)
         self._cached_evader_distances: Optional[np.ndarray] = None
-
-        # Track if evader was captured this episode (for capture_time logging)
         self._was_captured = False
 
-        # Create evasion agent
         self.evasion_agent = create_evasion_agent(
             strategy=evader_strategy, world_size=world_size, max_speed=evader_speed, torus=torus
         )
@@ -139,7 +134,6 @@ class PursuitEvasionEnv(BaseEnv):
         # Define observation layout for mean embedding extractor (must be before parent init)
         self._setup_observation_layout()
 
-        # Call parent constructor
         super().__init__(
             num_agents=num_pursuers,
             world_size=world_size,
@@ -317,7 +311,6 @@ class PursuitEvasionEnv(BaseEnv):
             valid_mask = np.zeros((num_agents, self._max_neighbours), dtype=bool)
             valid_mask[:, :actual_neighbors] = True
 
-        # Compute wall distances and bearings (vectorized, no Python loop)
         dx_left = positions[:, 0]
         dx_right = self.world_size - positions[:, 0]
         dy_bottom = positions[:, 1]
@@ -381,17 +374,12 @@ class PursuitEvasionEnv(BaseEnv):
         evader_bearings_cos = np.where(evader_in_range, evader_bearings_cos, 0.0).astype(np.float32)
         evader_bearings_sin = np.where(evader_in_range, evader_bearings_sin, 0.0).astype(np.float32)
 
-        # Build final observations
-        # Local features (6 dims): [wall_dist, wall_bearing_cos, wall_bearing_sin, evader_dist, evader_bearing_cos, evader_bearing_sin]
-        # Distances are normalized to [0, 1], bearings (cos/sin) are in [-1, 1]
         local_features = np.stack([wall_dists_normalized, wall_bearings_cos, wall_bearings_sin, evader_dists_normalized, evader_bearings_cos, evader_bearings_sin], axis=1)  # (N, 6)
         neighbor_flat = neighbor_features.reshape(num_agents, self._max_neighbours * self._neighbour_feature_dim)
         mask = valid_mask.astype(np.float32)  # (N, max_neighbours)
 
-        # Concatenate all components: [local | neighbors | mask] (following Hüttenrauch et al. 2019)
         all_obs = np.concatenate([local_features, neighbor_flat, mask], axis=1)
 
-        # Convert to dictionary
         for idx, agent in enumerate(self.agents):
             observations[agent] = all_obs[idx]
 
@@ -411,7 +399,6 @@ class PursuitEvasionEnv(BaseEnv):
 
     def _check_terminations(self) -> Dict[str, bool]:
         """Check if episode should terminate (evader captured)."""
-        # Use cached evader distances (computed once in _intermediate_steps)
         assert self._cached_evader_distances is not None, "Evader distances not cached!"
         distances = self._cached_evader_distances
         captured = np.any(distances < self.capture_radius)
@@ -424,7 +411,6 @@ class PursuitEvasionEnv(BaseEnv):
 
     def _get_infos(self) -> Dict[str, dict]:
         """Return additional information for each agent including task success and capture time."""
-        # Use cached evader distances (computed once in _intermediate_steps)
         assert self._cached_evader_distances is not None, "Evader distances not cached!"
         distances = self._cached_evader_distances
         min_dist = np.min(distances)
@@ -491,55 +477,6 @@ class PursuitEvasionEnv(BaseEnv):
         if np.linalg.norm(direction) > 0:
             self.evader_orientation = np.arctan2(direction[1], direction[0])
 
-    # Helper methods
-
-    def _calc_dist_to_closest_wall(self, pos: np.ndarray) -> float:
-        """Calculate distance to closest wall."""
-        return np.min([pos[0], pos[1], self.world_size - pos[0], self.world_size - pos[1]])
-
-    def _bearing_to_closest_wall(self, pos: np.ndarray, orientation: float) -> float:
-        """Calculate bearing to closest wall using proper vector math.
-
-        Returns bearing in radians, normalized to [-π, π].
-        """
-        x, y = pos
-
-        # Calculate distances to each wall
-        dist_left = x
-        dist_right = self.world_size - x
-        dist_bottom = y
-        dist_top = self.world_size - y
-
-        # Find closest wall and determine target point on that wall
-        min_dist = min(dist_left, dist_right, dist_bottom, dist_top)
-
-        if min_dist == dist_left:
-            # Left wall: target is at (0, y)
-            wall_target = np.array([0.0, y])
-        elif min_dist == dist_right:
-            # Right wall: target is at (world_size, y)
-            wall_target = np.array([self.world_size, y])
-        elif min_dist == dist_bottom:
-            # Bottom wall: target is at (x, 0)
-            wall_target = np.array([x, 0.0])
-        else:
-            # Top wall: target is at (x, world_size)
-            wall_target = np.array([x, self.world_size])
-
-        # Calculate vector from agent to wall target
-        delta = wall_target - pos
-
-        # Calculate absolute bearing to wall
-        wall_bearing = np.arctan2(delta[1], delta[0])
-
-        # Calculate relative bearing (wall bearing - agent orientation)
-        relative_bearing = wall_bearing - orientation
-
-        # Normalize to [-π, π]
-        relative_bearing = (relative_bearing + np.pi) % (2 * np.pi) - np.pi
-
-        return relative_bearing
-
     def _render(self) -> Optional[np.ndarray]:
         """
         Render the environment using pygame.
@@ -547,8 +484,6 @@ class PursuitEvasionEnv(BaseEnv):
         Returns:
             Optional[np.ndarray]: RGB array if render_mode is 'rgb_array', None otherwise
         """
-        import pygame
-
         if self.screen is None and self.render_mode == "human":
             pygame.init()
             self.screen = pygame.display.set_mode((self.window_size, self.window_size))
@@ -600,7 +535,5 @@ class PursuitEvasionEnv(BaseEnv):
     def _close(self) -> None:
         """Clean up resources."""
         if self.screen is not None:
-            import pygame
-
             pygame.quit()
             self.screen = None
