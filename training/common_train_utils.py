@@ -36,81 +36,45 @@ warnings.filterwarnings("ignore", message=".*render_mode.*", category=UserWarnin
 
 
 class MALRMetricsCallback(BaseCallback):
-    """Custom callback to log MARL-specific metrics for thesis analysis.
-
-    Tracks:
-    - Reward statistics (mean, std, success rate)
-    - Training efficiency (timesteps/second)
-    - Episode diversity across vectorized environments
-    - Action entropy for coordination analysis
-
-    OPTIMIZATION: Expensive statistics computations moved to _on_rollout_end()
-    instead of _on_step() to avoid 2000+ redundant NumPy operations per rollout.
-    """
+    """Custom callback to log MARL-specific metrics for thesis analysis."""
 
     def __init__(self, verbose: int = 0):
         super().__init__(verbose)
         self.start_time = time.time()
-        self.reward_buffer = deque(maxlen=100)  # Last 100 episodes for rolling stats
-        self.episode_lengths = deque(maxlen=100)
-        self.ep_info_buffer = deque(maxlen=100)  # For success rate tracking
 
     def _on_step(self) -> bool:
-        """Called after every environment step - collect data only, defer computation."""
-        # Collect episode info from VecMonitor (cheap operation)
-        if hasattr(self.model.env, "ep_info_buffer"):
-            for ep_info in self.model.env.ep_info_buffer:
-                self.ep_info_buffer.append(ep_info)
-                self.reward_buffer.append(ep_info["r"])
-                self.episode_lengths.append(ep_info["l"])
-
         return True
 
     def _on_rollout_end(self) -> None:
-        """Called once per rollout (after n_steps environment steps).
+        ep_info_buffer = self.model.ep_info_buffer
+        if len(ep_info_buffer) == 0:
+            return
 
-        Compute expensive statistics here instead of every step.
-        With n_steps=2048, this reduces computations from 2048x to 1x per rollout.
-        """
-        # Log rolling reward statistics
-        if len(self.reward_buffer) > 1:
-            reward_mean = np.mean(list(self.reward_buffer))
-            reward_std = np.std(list(self.reward_buffer))
-            self.logger.record("rollout/ep_rew_mean_rolling", reward_mean)
-            self.logger.record("rollout/ep_rew_std", reward_std)
+        rewards = [ep["r"] for ep in ep_info_buffer]
+        lengths = [ep["l"] for ep in ep_info_buffer]
 
-        # Log episode length statistics
-        if len(self.episode_lengths) > 1:
-            ep_len_mean = np.mean(list(self.episode_lengths))
-            ep_len_std = np.std(list(self.episode_lengths))
-            self.logger.record("rollout/ep_len_mean_rolling", ep_len_mean)
-            self.logger.record("rollout/ep_len_std", ep_len_std)
+        if len(rewards) > 1:
+            self.logger.record("rollout/ep_rew_mean_rolling", float(np.mean(rewards)))
+            self.logger.record("rollout/ep_rew_std", float(np.std(rewards)))
+        if len(lengths) > 1:
+            self.logger.record("rollout/ep_len_mean_rolling", float(np.mean(lengths)))
+            self.logger.record("rollout/ep_len_std", float(np.std(lengths)))
 
-        # Log training efficiency
         elapsed_time = time.time() - self.start_time
         if elapsed_time > 0:
-            timesteps_per_second = self.model.num_timesteps / elapsed_time
-            self.logger.record("time/timesteps_per_second", timesteps_per_second)
+            self.logger.record("time/timesteps_per_second", self.model.num_timesteps / elapsed_time)
 
-        # Log task-specific success rate if available in ep_info
-        if len(self.ep_info_buffer) > 0:
-            # Check if any info contains task_success
-            success_list = [ep_info.get("task_success", None) for ep_info in self.ep_info_buffer
-                           if "task_success" in ep_info]
-            if success_list:
-                success_rate = np.mean(success_list)
-                self.logger.record("task/success_rate", success_rate)
+        success_list = [ep["task_success"] for ep in ep_info_buffer if "task_success" in ep]
+        if success_list:
+            self.logger.record("task/success_rate", float(np.mean(success_list)))
 
-            # Track task-specific metrics if available
-            convergence_vel = [ep_info.get("convergence_velocity", None) for ep_info in self.ep_info_buffer
-                              if "convergence_velocity" in ep_info]
-            if convergence_vel:
-                self.logger.record("task/convergence_velocity_mean", np.mean(convergence_vel))
+        convergence_vel = [ep["convergence_velocity"] for ep in ep_info_buffer if "convergence_velocity" in ep]
+        if convergence_vel:
+            self.logger.record("task/convergence_velocity_mean", float(np.mean(convergence_vel)))
 
-            capture_times = [ep_info.get("capture_time", None) for ep_info in self.ep_info_buffer
-                            if "capture_time" in ep_info]
-            if capture_times:
-                self.logger.record("task/capture_time_mean", np.mean(capture_times))
+        capture_times = [ep["capture_time"] for ep in ep_info_buffer if "capture_time" in ep]
+        if capture_times:
+            self.logger.record("task/capture_time_mean", float(np.mean(capture_times)))
 
 
 class IterationCounterCallback(BaseCallback):

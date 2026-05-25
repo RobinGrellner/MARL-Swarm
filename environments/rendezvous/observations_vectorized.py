@@ -277,13 +277,7 @@ def compute_observations_vectorized(
 
     # Step 9: Build complete local features
     if obs_model == "local_comm":
-        # Include own neighborhood count
-        within_comm = distances <= comm_radius
-        np.fill_diagonal(within_comm, False)
-        own_counts = within_comm.sum(axis=1).astype(np.float32)  # (N,)
-
-        # Normalize own neighborhood count by (num_agents - 1)
-        own_counts = own_counts / (num_agents - 1)
+        own_counts = neighborhood_counts / (num_agents - 1)
 
         local_features = np.stack([wall_dists, wall_bearings_cos, wall_bearings_sin, own_counts], axis=1)  # (N, 4)
     else:
