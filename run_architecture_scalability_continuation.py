@@ -115,6 +115,7 @@ class ArchitectureScalabilityContinuation:
         cmd = [
             "uv",
             "run",
+            "--no-sync",
             "python",
             "training/train_rendezvous.py",
             "--num-agents",

@@ -88,6 +88,7 @@ class ArchitectureScalabilityRunner:
         cmd = [
             "uv",
             "run",
+            "--no-sync",
             "python",
             train_script,
             agent_param,
