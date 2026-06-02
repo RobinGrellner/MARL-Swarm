@@ -61,9 +61,10 @@ training/
 ├── evaluate_*.py              # Evaluation + visualization
 └── configs/                   # JSON experiment configs
 
-evaluation/
-├── run_scalability_experiment.py  # Orchestrate multi-scale tests
-└── plotting.py                    # Result visualization
+analysis/
+├── run_analysis.py               # rliable stats for one config
+├── run_comparison.py             # rliable comparison across swarm sizes
+└── rliable_eval.py               # IQM / CIs / performance profiles
 ```
 
 ## Data Flow: Single Environment Step
@@ -991,9 +992,9 @@ python training/evaluate_rendezvous.py \
   --model-path M --eval-sizes 10 20 50 100 \
   --num-episodes E --results-file R
 
-# Scalability Experiments
-python evaluation/run_scalability_experiment.py \
-  --config CONFIG.json
+# Reliable statistical analysis (rliable)
+python -m analysis.run_analysis --config CONFIG
+python -m analysis.run_comparison --configs CONFIG_4 CONFIG_50 CONFIG_100
 ```
 
 ## Testing
@@ -1020,9 +1021,9 @@ MARL-Swarm/
 │   └── *_train_utils.py (Reusable utilities)
 ├── policies/
 │   └── mean_embedding_extractor.py (Scale-invariant feature extraction)
-├── evaluation/
-│   ├── run_scalability_experiment.py (Orchestrator)
-│   └── plotting.py (Visualization)
+├── analysis/
+│   ├── run_analysis.py / run_comparison.py (rliable CLIs)
+│   └── rliable_eval.py (IQM, CIs, performance profiles)
 ├── models/ (Saved trained policies)
 ├── logs/ (TensorBoard logs)
 ├── results/ (Experiment results)

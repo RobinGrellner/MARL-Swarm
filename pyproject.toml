@@ -27,13 +27,19 @@ dependencies = [
     "shapely>=2.0.7",
     "seaborn>=0.13.2",
     "psutil>=5.9.0",
+    "rliable>=1.2.0",
+    "pandas>=2.0.3",
 ]
 
+[project.scripts]
+run_analysis = "analysis.run_analysis:main"
+run_comparison = "analysis.run_comparison:main"
+
 [tool.hatch.build.targets.wheel]
-packages = ["environments", "policies", "training", "evaluation"]
+packages = ["environments", "policies", "training", "analysis"]
 
 [tool.pytest.ini_options]
-testpaths = ["environments/tests"]
+testpaths = ["environments/tests", "analysis/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -95,7 +101,7 @@ ignore = [
 "__init__.py" = ["F401"]  # Allow unused imports in __init__.py
 
 [tool.ruff.lint.isort]
-known-first-party = ["environments", "policies", "training", "evaluation"]
+known-first-party = ["environments", "policies", "training", "analysis"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
 
 [[tool.uv.index]]

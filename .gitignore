@@ -183,3 +183,7 @@ training/runs/
 
 # Research notes and drafts (personal notes, not for version control)
 research/
+
+
+.ruff_cache
+.pytest_cache

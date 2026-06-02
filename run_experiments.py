@@ -58,6 +58,27 @@ class ArchitectureScalabilityRunner:
 
         return dict(items)
 
+    def compute_total_timesteps(self, exp_config: Dict[str, Any]) -> int:
+        """Effective training budget for one experiment.
+
+        When the config sets ``n_iterations`` the budget is
+        ``n_iterations * n_steps * num_agents * num_vec_envs``; otherwise the
+        config's ``total_timesteps`` (or the runner default) is used. Kept in one
+        place so ``build_train_command`` and the startup banner cannot disagree.
+        """
+        env_config = exp_config.get("env_config", {})
+        train_config = exp_config.get("train_config", {})
+        if env_config.get("environment") == "pursuit_evasion":
+            num_agents = env_config.get("num_pursuers")
+        else:
+            num_agents = env_config.get("num_agents")
+        num_vec_envs = self.num_vec_envs if self.num_vec_envs is not None else train_config.get("num_vec_envs")
+        n_iterations = train_config.get("n_iterations")
+        if n_iterations is not None:
+            n_steps = train_config.get("n_steps", 500)
+            return n_iterations * n_steps * num_agents * num_vec_envs
+        return train_config.get("total_timesteps", self.total_timesteps)
+
     def build_train_command(self, exp_name: str, exp_config: Dict[str, Any]) -> List[str]:
         """Build training command from experiment config."""
         env_config = exp_config.get("env_config", {})
@@ -75,12 +96,7 @@ class ArchitectureScalabilityRunner:
 
         num_vec_envs = self.num_vec_envs if self.num_vec_envs is not None else train_config.get("num_vec_envs")
 
-        n_iterations = train_config.get("n_iterations")
-        if n_iterations is not None:
-            n_steps = train_config.get("n_steps", 500)
-            total_timesteps = n_iterations * n_steps * num_agents * num_vec_envs
-        else:
-            total_timesteps = train_config.get("total_timesteps", self.total_timesteps)
+        total_timesteps = self.compute_total_timesteps(exp_config)
 
         model_path = f"{self.model_dir}/{exp_name}.zip"
         log_path = f"{self.tensorboard_log}/{exp_name}"
@@ -287,6 +303,31 @@ def main():
         model_dir=args.model_dir,
     )
 
+    # Effective settings come from each experiment's config (mirrors
+    # build_train_command), not just the CLI defaults. For CUDA the config's
+    # use_cuda wins, with --use-cuda only as the fallback; the training script
+    # still falls back to CPU at runtime if CUDA is unavailable.
+    experiments = runner.get_all_experiments()
+    cuda_settings = {
+        bool(cfg.get("train_config", {}).get("use_cuda", args.use_cuda))
+        for cfg in experiments.values()
+    }
+    timestep_settings = {runner.compute_total_timesteps(cfg) for cfg in experiments.values()}
+
+    if not cuda_settings:
+        cuda_enabled = str(args.use_cuda)
+    elif len(cuda_settings) == 1:
+        cuda_enabled = str(next(iter(cuda_settings)))
+    else:
+        cuda_enabled = f"per experiment ({sorted(cuda_settings)})"
+
+    if not timestep_settings:
+        timesteps_display = f"{args.total_timesteps:,}"
+    elif len(timestep_settings) == 1:
+        timesteps_display = f"{next(iter(timestep_settings)):,}"
+    else:
+        timesteps_display = f"per experiment ({min(timestep_settings):,}-{max(timestep_settings):,})"
+
     # Print experiment info
     print(f"\n{'=' * 80}")
     print(f"EXPERIMENT RUNNER - Master's Thesis")
@@ -295,9 +336,9 @@ def main():
     print(f"Config: {config_path}")
     print(f"TensorBoard logs: {args.tensorboard_log}")
     print(f"Parallel environments per experiment: {args.num_vec_envs or 'from config'}")
-    print(f"GPU/CUDA enabled: {args.use_cuda}")
+    print(f"GPU/CUDA enabled (from config): {cuda_enabled}")
     print(f"Model directory: {args.model_dir}")
-    print(f"Timesteps per training: {args.total_timesteps:,}")
+    print(f"Timesteps per training: {timesteps_display}")
     if args.skip:
         print(f"Skip: first {args.skip} experiments")
     if args.limit:

@@ -1,0 +1,6 @@
+config_x,config_y,p_improvement,ci_low,ci_high
+embed_dim128,embed_dim64,0.52,0.16,0.8609999999999991
+embed_dim16,embed_dim64,0.44,0.09900000000000027,0.88
+embed_dim32,embed_dim64,0.32,0.0,0.68
+embed_dim4,embed_dim64,0.28,0.0,0.64
+embed_dim8,embed_dim64,0.4,0.04,0.76
