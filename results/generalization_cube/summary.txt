@@ -1,0 +1,38 @@
+Cross-size generalization cube
+
+embed_dim4: mean convergence rate (rows=train, cols=test [4, 8, 16, 32, 50, 100])
+  train    4:     1.00    0.98    0.84    0.80    0.80    0.79
+  train   16:     1.00    1.00    1.00    0.96    0.83    0.81
+  train   50:     0.00    0.00    0.00    0.00    0.00    0.00
+  train  100:     0.19    0.20    0.20    0.20    0.20    0.20
+
+embed_dim8: mean convergence rate (rows=train, cols=test [4, 8, 16, 32, 50, 100])
+  train    4:     1.00    0.93    0.71    0.61    0.59    0.47
+  train   16:     1.00    1.00    1.00    1.00    1.00    0.94
+  train   50:     0.40    0.40    0.40    0.40    0.40    0.36
+  train  100:     0.23    0.20    0.20    0.20    0.20    0.20
+
+embed_dim16: mean convergence rate (rows=train, cols=test [4, 8, 16, 32, 50, 100])
+  train    4:     1.00    1.00    0.99    0.84    0.76    0.64
+  train   16:     1.00    1.00    1.00    1.00    1.00    1.00
+  train   50:     0.75    0.57    0.42    0.40    0.41    0.40
+  train  100:     0.55    0.46    0.40    0.40    0.40    0.40
+
+embed_dim32: mean convergence rate (rows=train, cols=test [4, 8, 16, 32, 50, 100])
+  train    4:     1.00    0.94    0.91    0.62    0.43    0.25
+  train   16:     1.00    1.00    1.00    1.00    1.00    1.00
+  train   50:     0.98    1.00    0.99    0.99    1.00    1.00
+  train  100:     0.00    0.00    0.00    0.00    0.00    0.00
+
+embed_dim64: mean convergence rate (rows=train, cols=test [4, 8, 16, 32, 50, 100])
+  train    4:     0.99    0.98    0.95    0.78    0.63    0.60
+  train   16:     0.80    0.80    0.77    0.75    0.70    0.71
+  train   50:     0.96    0.92    0.75    0.69    0.64    0.64
+  train  100:     0.34    0.26    0.20    0.20    0.20    0.20
+
+embed_dim128: mean convergence rate (rows=train, cols=test [4, 8, 16, 32, 50, 100])
+  train    4:     1.00    0.97    0.93    0.70    0.63    0.55
+  train   16:     1.00    1.00    1.00    1.00    1.00    1.00
+  train   50:     0.45    0.10    0.00    0.00    0.00    0.00
+  train  100:     0.55    0.45    0.40    0.40    0.40    0.39
+

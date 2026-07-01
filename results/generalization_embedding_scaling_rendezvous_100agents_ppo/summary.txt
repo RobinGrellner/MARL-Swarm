@@ -1,0 +1,19 @@
+Zero-shot cross-size generalization: embedding_scaling_rendezvous_100agents_ppo
+Trained at swarm size 100; tested at [4, 8, 16, 32, 50, 100].
+Score = IQM over the 5 PPO runs (task = test swarm size).
+
+                             4         8        16        32        50       100
+[reward] embed_dim4    -184.99   -193.22   -194.89   -198.79   -204.74   -221.03
+[reward] embed_dim8    -100.12   -114.51   -121.57   -128.50   -136.00   -154.56
+[reward] embed_dim16    -76.13    -81.86    -87.53    -93.79    -97.83   -110.49
+[reward] embed_dim32    -92.00   -107.87   -115.77   -127.22   -137.16   -161.87
+[reward] embed_dim64    -88.04    -90.41    -93.28    -98.11   -104.35   -120.09
+[reward] embed_dim128    -37.65    -51.11    -58.50    -70.48    -82.03   -104.45
+
+                             4         8        16        32        50       100
+[conv%]  embed_dim4       0.00      0.00      0.00      0.00      0.00      0.00
+[conv%]  embed_dim8       0.06      0.00      0.00      0.00      0.00      0.00
+[conv%]  embed_dim16      0.58      0.43      0.33      0.33      0.33      0.33
+[conv%]  embed_dim32      0.00      0.00      0.00      0.00      0.00      0.00
+[conv%]  embed_dim64      0.23      0.09      0.00      0.00      0.00      0.00
+[conv%]  embed_dim128      0.58      0.42      0.33      0.33      0.33      0.31
