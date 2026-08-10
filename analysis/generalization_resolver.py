@@ -1,19 +1,17 @@
 """Resolve a training-config stem to its trained-model zip paths on disk.
 
-The experiment configs and the saved model directories use slightly different
-naming, so this module bridges them:
-
     config stem:  embedding_scaling_rendezvous_16agents_ppo
     model dir:    model/embedding_scaling_rendezvous_16_ppo_<run>/embed_dim<d>.zip
 
-Transforms applied (config -> model-dir prefix):
-  * ``<N>agents`` -> ``<N>``           (e.g. ``16agents`` -> ``16``)
-  * ``architecture_scalability`` -> ``architecture_schaling``  (a known typo
-    baked into the saved directory names)
+    config stem:  architecture_scalability_rendezvous_4agents
+    model dir:    model/architecture_schaling_rendezvous_4_ppo_<run>/phi_layers<l>_phi_hidden_width<w>.zip
 
-Resolution is data-driven: after computing the expected prefix we glob for
-``<prefix>_<run>`` run directories and discover the ``embed_dim*.zip`` variants
-that actually exist, so partially-trained sweeps resolve to whatever is present.
+    config stem:  architecture_scalability_pursuit_evasion_4agents
+    model dir:    model/architecture_scaling_pusuit_evasion_4_ppo_<run>/phi_layers<l>_phi_hidden_width<w>_seed0.zip
+
+Resolution is data-driven: after computing candidate prefixes we glob for
+``<prefix>_<run>`` run directories and discover the checkpoint zips that
+actually exist, so partially-trained sweeps resolve to whatever is present.
 """
 
 from __future__ import annotations
@@ -22,31 +20,66 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
-# Misspellings frozen into the saved model directory names.
-_KNOWN_DIR_TYPOS = {"architecture_scalability": "architecture_schaling"}
+# On-disk directory-naming schemes, tried in order until one has matches.
+_KNOWN_DIR_NAMING_SCHEMES: Tuple[Tuple[Tuple[str, str], ...], ...] = (
+    (),
+    (("architecture_scalability", "architecture_schaling"),),
+    (
+        ("architecture_scalability", "architecture_scaling"),
+        ("pursuit_evasion", "pusuit_evasion"),
+    ),
+)
 
-_VARIANT_RE = re.compile(r"^embed_dim(\d+)$")
+_EMBED_DIM_LABEL_RE = re.compile(r"^embed_dim(\d+)$")
+_PHI_LABEL_RE = re.compile(r"^phi(\d+)_w(\d+)$")
+
+_EMBED_DIM_FILE_RE = re.compile(r"^embed_dim(\d+)$")
+_PHI_FILE_RE = re.compile(r"^(?:activationrelu_)?phi_layers(\d+)_phi_hidden_width(\d+)(?:_seed\d+)?$")
 
 
 @dataclass(frozen=True)
 class ResolvedModel:
-    """One trained policy zip for a (config, variant, run)."""
-
     config: str
-    variant: str        # e.g. "embed_dim16"
-    embed_dim: int
+    variant: str        # e.g. "embed_dim16" or "phi2_w64"
     run: int
     zip_path: Path
 
 
+def variant_sort_key(variant: str) -> Tuple[int, ...]:
+    m = _EMBED_DIM_LABEL_RE.match(variant)
+    if m:
+        return (int(m.group(1)),)
+    m = _PHI_LABEL_RE.match(variant)
+    if m:
+        return (int(m.group(1)), int(m.group(2)))
+    raise ValueError(f"Unrecognized variant label: {variant!r}")
+
+
+def _variant_label_from_zip_stem(stem: str) -> Optional[str]:
+    m = _EMBED_DIM_FILE_RE.match(stem)
+    if m:
+        return f"embed_dim{int(m.group(1))}"
+    m = _PHI_FILE_RE.match(stem)
+    if m:
+        return f"phi{int(m.group(1))}_w{int(m.group(2))}"
+    return None
+
+
 def model_prefix_for_config(config_stem: str) -> str:
-    """Map a config stem to the saved model-directory prefix (run suffix excluded)."""
-    prefix = re.sub(r"(\d+)agents", r"\1", config_stem)
-    for canonical, typo in _KNOWN_DIR_TYPOS.items():
-        prefix = prefix.replace(canonical, typo)
-    return prefix
+    return re.sub(r"(\d+)agents", r"\1", config_stem)
+
+
+def _prefix_candidates(prefix: str) -> List[str]:
+    candidates = []
+    for substitutions in _KNOWN_DIR_NAMING_SCHEMES:
+        candidate = prefix
+        for canonical, replacement in substitutions:
+            candidate = candidate.replace(canonical, replacement)
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
 
 
 def _glob_runs(prefix: str, root: Path) -> Dict[int, Path]:
@@ -61,91 +94,80 @@ def _glob_runs(prefix: str, root: Path) -> Dict[int, Path]:
 
 
 def resolve_run_dirs(config_stem: str, model_root: str | Path = "model") -> Dict[int, Path]:
-    """Find ``{run_id: dir}`` for a config, by globbing ``<prefix>_<run>``.
-
-    Some config stems omit the algorithm suffix that the saved dirs carry (e.g.
-    ``architecture_scalability_rendezvous_4agents`` vs ``..._4_ppo_<run>``); if
-    the bare prefix matches nothing, retry with ``_ppo`` appended.
-    """
     prefix = model_prefix_for_config(config_stem)
     root = Path(model_root)
-    runs = _glob_runs(prefix, root)
-    if not runs and not prefix.endswith(("_ppo", "_trpo")):
-        runs = _glob_runs(f"{prefix}_ppo", root)
-    return dict(sorted(runs.items()))
+    for candidate in _prefix_candidates(prefix):
+        for probe in (candidate, f"{candidate}_ppo"):
+            runs = _glob_runs(probe, root)
+            if runs:
+                return dict(sorted(runs.items()))
+    return {}
 
 
-def discover_variants(run_dir: Path) -> List[int]:
-    """List embed_dim variants present in a run dir, ascending."""
-    dims: List[int] = []
-    for zp in run_dir.glob("embed_dim*.zip"):
-        m = _VARIANT_RE.match(zp.stem)
-        if m:
-            dims.append(int(m.group(1)))
-    return sorted(dims)
+def discover_variants(run_dir: Path) -> List[str]:
+    labels = (_variant_label_from_zip_stem(zp.stem) for zp in run_dir.glob("*.zip"))
+    return sorted((label for label in labels if label is not None), key=variant_sort_key)
 
 
 def resolve_models(
     config_stem: str,
     *,
     model_root: str | Path = "model",
-    variants: Optional[Sequence[int]] = None,
+    variants: Optional[Sequence[str]] = None,
 ) -> List[ResolvedModel]:
-    """Resolve all (variant, run) -> zip paths that exist for a config.
-
-    Args:
-        config_stem: e.g. ``embedding_scaling_rendezvous_16agents_ppo``.
-        model_root: directory holding the per-run model folders.
-        variants: restrict to these embed_dims; default = discover from disk.
-
-    Returns:
-        Existing ``ResolvedModel`` records only (missing zips are skipped).
-    """
     run_dirs = resolve_run_dirs(config_stem, model_root)
+    wanted = set(variants) if variants is not None else None
     out: List[ResolvedModel] = []
     for run, run_dir in run_dirs.items():
-        dims = list(variants) if variants is not None else discover_variants(run_dir)
-        for ed in dims:
-            zp = run_dir / f"embed_dim{ed}.zip"
-            if zp.exists():
-                out.append(
-                    ResolvedModel(
-                        config=config_stem,
-                        variant=f"embed_dim{ed}",
-                        embed_dim=ed,
-                        run=run,
-                        zip_path=zp,
-                    )
-                )
+        for zp in sorted(run_dir.glob("*.zip")):
+            label = _variant_label_from_zip_stem(zp.stem)
+            if label is None or (wanted is not None and label not in wanted):
+                continue
+            out.append(ResolvedModel(config=config_stem, variant=label, run=run, zip_path=zp))
     return out
 
 
 @dataclass(frozen=True)
 class ConfigSpec:
-    """The parts of a training config the generalization pipeline needs."""
-
     stem: str
     env_config: Dict
     train_size: int
-    variants: List[int]
+    variants: List[str]  # e.g. ["embed_dim4", ...] or ["phi1_w32", ...]
+    task: str            # "rendezvous" | "pursuit_evasion"
+    max_size: int        # obs-space cap (max_agents / max_pursuers)
+
+
+def _variants_from_matrix(matrix_parameters: Dict) -> List[str]:
+    if "embed_dim" in matrix_parameters:
+        dims = sorted(int(d) for d in matrix_parameters["embed_dim"])
+        return [f"embed_dim{d}" for d in dims]
+    if "phi_layers" in matrix_parameters and "phi_hidden_width" in matrix_parameters:
+        layers = sorted(int(x) for x in matrix_parameters["phi_layers"])
+        widths = sorted(int(x) for x in matrix_parameters["phi_hidden_width"])
+        return [f"phi{layer}_w{width}" for layer in layers for width in widths]
+    return []
 
 
 def load_config_spec(config_path: str | Path, configs_dir: str | Path = "training/configs") -> ConfigSpec:
-    """Read a config JSON into a ``ConfigSpec`` (stem, env_config, train size, variants).
-
-    Accepts either a bare stem or a path; resolves under ``configs_dir`` if needed.
-    """
     path = Path(config_path)
     if path.suffix != ".json":
         path = Path(configs_dir) / f"{path.name}.json"
     data = json.loads(path.read_text())
     defaults = data.get("defaults", {})
     env_config = defaults.get("env_config", {})
-    train_size = int(env_config.get("num_agents"))
-    variants = [int(d) for d in data.get("matrix_parameters", {}).get("embed_dim", [])]
+    task = env_config.get("environment", "rendezvous")
+    if task == "pursuit_evasion":
+        train_size = int(env_config.get("num_pursuers"))
+        max_size = int(env_config.get("max_pursuers", train_size))
+    else:
+        train_size = int(env_config.get("num_agents"))
+        max_size = int(env_config.get("max_agents", train_size))
+    variants = _variants_from_matrix(data.get("matrix_parameters", {}))
     return ConfigSpec(
         stem=path.stem,
         env_config=env_config,
         train_size=train_size,
-        variants=sorted(variants),
+        variants=variants,
+        task=task,
+        max_size=max_size,
     )

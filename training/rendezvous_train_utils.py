@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import argparse
 from typing import Any, Dict, Optional, Tuple
+
 from stable_baselines3.common.base_class import BaseAlgorithm
 
 from environments.rendezvous.rendezvous_env import RendezvousEnv
-
 from training.common_train_utils import run_training
 
 
@@ -41,9 +41,16 @@ def run_training_rendezvous(
     Returns:
         Tuple of (trained model, info dict with vec_env)
     """
-    # Default logging keywords for Rendezvous: swarm convergence metrics
+    # Default logging keywords for Rendezvous: swarm convergence metrics.
+    # task_success + convergence_velocity are required by MALRMetricsCallback;
+    # they must be in VecMonitor's info_keywords to survive into ep_info_buffer.
     if log_info_keys is None:
-        log_info_keys = ("max_pairwise_distance", "distance_to_com")
+        log_info_keys = (
+            "max_pairwise_distance",
+            "distance_to_com",
+            "task_success",
+            "convergence_velocity",
+        )
 
     return run_training(
         env,
@@ -92,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-normalize", action="store_true", help="Disable observation and reward normalisation")
     parser.add_argument("--log-info", nargs="*", default=None, help="Info keys to log via VecMonitor")
     parser.add_argument(
-        "--model-path", type=str, default="models/rendezvous_model.zip", help="Path to save the trained model"
+        "--model-path", type=str, default="model/rendezvous_model.zip", help="Path to save the trained model"
     )
     args = parser.parse_args()
 

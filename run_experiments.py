@@ -1,11 +1,10 @@
-import json
-import subprocess
 import argparse
+import datetime
+import subprocess
 import sys
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-import datetime
-import io
+from typing import Any, Dict, List, Optional
+
 from training.config_utils import load_and_expand_config
 
 
@@ -32,7 +31,7 @@ class ArchitectureScalabilityRunner:
         self.total_timesteps = total_timesteps
         self.dry_run = dry_run
         self.use_cuda = use_cuda
-        self.model_dir = model_dir or "models"
+        self.model_dir = model_dir or "model"
 
         self.config = load_and_expand_config(str(self.config_path))
 
@@ -151,6 +150,11 @@ class ArchitectureScalabilityRunner:
             "--seed": train_config.get("seed"),
             "--n-steps": train_config.get("n_steps"),
             "--batch-size": train_config.get("batch_size"),
+            "--n-epochs": train_config.get("n_epochs"),
+            "--gamma": train_config.get("gamma"),
+            "--gae-lambda": train_config.get("gae_lambda"),
+            "--clip-range": train_config.get("clip_range"),
+            "--target-kl": train_config.get("target_kl"),
             "--break-distance-threshold": env_config.get("break_distance_threshold"),
             "--kinematics": env_config.get("kinematics"),
         }
@@ -181,7 +185,7 @@ class ArchitectureScalabilityRunner:
         cmd = self.build_train_command(exp_name, exp_config)
 
         if self.dry_run:
-            print(f"DRY RUN - Would execute:")
+            print("DRY RUN - Would execute:")
             print(" ".join(cmd))
             return True
 
@@ -213,7 +217,7 @@ class ArchitectureScalabilityRunner:
     def print_summary(self) -> None:
         """Print experiment summary."""
         print(f"\n{'=' * 80}")
-        print(f"EXPERIMENT SUMMARY")
+        print("EXPERIMENT SUMMARY")
         print(f"{'=' * 80}")
         print(f"Total experiments run: {self.total_experiments}")
         print(f"Completed successfully: {self.completed_experiments}")
@@ -223,7 +227,7 @@ class ArchitectureScalabilityRunner:
             print(f"Success rate: {success_rate:.1f}%")
         print(f"\nTensorBoard logs: {self.tensorboard_log}")
         print(f"Models saved to: {self.model_dir}/")
-        print(f"\nTo view training progress:")
+        print("\nTo view training progress:")
         print(f"  tensorboard --logdir {self.tensorboard_log}")
         print(f"{'=' * 80}")
         print()
@@ -282,8 +286,8 @@ def main():
     parser.add_argument(
         "--model-dir",
         type=str,
-        default="models",
-        help="Directory to save trained models (default: models/)",
+        default="model",
+        help="Directory to save trained models (default: model/)",
     )
 
     args = parser.parse_args()
@@ -330,7 +334,7 @@ def main():
 
     # Print experiment info
     print(f"\n{'=' * 80}")
-    print(f"EXPERIMENT RUNNER - Master's Thesis")
+    print("EXPERIMENT RUNNER - Master's Thesis")
     print(f"{'=' * 80}")
     print(f"Start time: {datetime.datetime.now()}")
     print(f"Config: {config_path}")
@@ -344,7 +348,7 @@ def main():
     if args.limit:
         print(f"Limit: {args.limit} experiments")
     if args.dry_run:
-        print(f"Mode: DRY RUN (no training will execute)")
+        print("Mode: DRY RUN (no training will execute)")
     print(f"{'=' * 80}\n")
 
     # Run experiments

@@ -1,6 +1,7 @@
-from typing import List, Optional
-import numpy as np
 import math
+from typing import List, Optional
+
+import numpy as np
 
 
 class AgentHandler:

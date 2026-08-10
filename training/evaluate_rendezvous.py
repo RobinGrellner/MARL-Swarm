@@ -1,16 +1,18 @@
 """Evaluate trained rendezvous policy."""
 
 import argparse
+
 import numpy as np
-from environments.rendezvous.rendezvous_env import RendezvousEnv
-from stable_baselines3 import PPO
 from sb3_contrib import TRPO
+from stable_baselines3 import PPO
+
+from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments for evaluation."""
     parser = argparse.ArgumentParser(description="Evaluate a trained PPO agent on the Rendezvous environment")
-    parser.add_argument("--model-path", type=str, default="models/rendezvous_trained.zip", help="Path to trained model")
+    parser.add_argument("--model-path", type=str, default="model/rendezvous_trained.zip", help="Path to trained model")
     parser.add_argument("--num-agents", type=int, default=6, help="Number of agents in the environment")
     parser.add_argument("--world-size", type=float, default=10.0, help="Side length of the square world")
     parser.add_argument("--max-steps", type=int, default=100, help="Maximum number of steps per episode")

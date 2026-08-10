@@ -2,13 +2,13 @@
 """Demo: train and evaluate Rendezvous + Pursuit-Evasion on multiple scales."""
 
 import argparse
-import sys
 import subprocess
-from pathlib import Path
+import sys
 from argparse import Namespace
+from pathlib import Path
 
-from training.evaluate_rendezvous import evaluate as eval_rendezvous_func
 from training.evaluate_pursuit_evasion import main as eval_pursuit_func
+from training.evaluate_rendezvous import evaluate as eval_rendezvous_func
 
 
 def run_command(cmd: list, description: str) -> bool:
@@ -38,7 +38,7 @@ def train_rendezvous() -> bool:
         "--break-distance-threshold", "0.1",
         "--total-timesteps", "500000",
         "--num-vec-envs", "8",
-        "--model-path", "models/quick_rendezvous_demo.zip",
+        "--model-path", "model/quick_rendezvous_demo.zip",
         "--tensorboard-log", "logs/quick_rendezvous_demo"
     ]
     return run_command(cmd, "Rendezvous Training (500k steps)")
@@ -58,7 +58,7 @@ def train_pursuit() -> bool:
         "--obs-model", "global_basic",
         "--total-timesteps", "300000",
         "--num-vec-envs", "8",
-        "--model-path", "models/quick_pursuit_demo.zip",
+        "--model-path", "model/quick_pursuit_demo.zip",
         "--tensorboard-log", "logs/quick_pursuit_demo"
     ]
     return run_command(cmd, "Pursuit-Evasion Training (300k steps)")
@@ -68,11 +68,11 @@ def evaluate_rendezvous() -> bool:
     """Evaluate Rendezvous model at training size."""
     try:
         print(f"\n{'='*70}")
-        print(f"Rendezvous Evaluation (20 agents)")
+        print("Rendezvous Evaluation (20 agents)")
         print(f"{'='*70}\n")
 
         args = Namespace(
-            model_path="models/quick_rendezvous_demo.zip",
+            model_path="model/quick_rendezvous_demo.zip",
             num_agents=20,
             world_size=100.0,
             max_steps=500,
@@ -90,7 +90,7 @@ def evaluate_rendezvous() -> bool:
             deterministic=True
         )
         eval_rendezvous_func(args)
-        print(f"\n[OK] Rendezvous Evaluation completed successfully!")
+        print("\n[OK] Rendezvous Evaluation completed successfully!")
         return True
     except Exception as e:
         print(f"\n[FAIL] Rendezvous Evaluation failed: {e}")
@@ -101,14 +101,14 @@ def evaluate_pursuit() -> bool:
     """Evaluate Pursuit-Evasion model at training size."""
     try:
         print(f"\n{'='*70}")
-        print(f"Pursuit-Evasion Evaluation (10 pursuers)")
+        print("Pursuit-Evasion Evaluation (10 pursuers)")
         print(f"{'='*70}\n")
 
         # Simulate command-line arguments for the main function
         old_argv = sys.argv
         sys.argv = [
             "evaluate_pursuit_evasion.py",
-            "--model-path", "models/quick_pursuit_demo.zip",
+            "--model-path", "model/quick_pursuit_demo.zip",
             "--num-pursuers", "10",
             "--world-size", "10.0",
             "--max-steps", "100",
@@ -120,7 +120,7 @@ def evaluate_pursuit() -> bool:
         ]
         eval_pursuit_func()
         sys.argv = old_argv
-        print(f"\n[OK] Pursuit-Evasion Evaluation completed successfully!")
+        print("\n[OK] Pursuit-Evasion Evaluation completed successfully!")
         return True
     except Exception as e:
         print(f"\n[FAIL] Pursuit-Evasion Evaluation failed: {e}")

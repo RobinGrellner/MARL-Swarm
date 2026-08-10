@@ -1,11 +1,14 @@
 from __future__ import annotations
+
+import functools
 from abc import ABC, abstractmethod
-from .agent_handler import AgentHandler
-from typing import Dict, Tuple, Optional
-from pettingzoo import ParallelEnv
+from typing import Dict, Optional, Tuple
+
 import numpy as np
 from gymnasium import spaces
-import functools
+from pettingzoo import ParallelEnv
+
+from .agent_handler import AgentHandler
 
 
 # TODO: Implement debug-logging

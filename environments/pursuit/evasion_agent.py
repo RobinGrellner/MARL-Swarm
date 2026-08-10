@@ -14,10 +14,11 @@ Reference:
 
 from __future__ import annotations
 
-import numpy as np
-from scipy.spatial import Voronoi, distance
-from shapely.geometry import LineString, Point
 from typing import Optional
+
+import numpy as np
+from scipy.spatial import Voronoi
+from shapely.geometry import LineString
 
 
 class HüttenrauchEvasionAgent:
@@ -119,7 +120,7 @@ class HüttenrauchEvasionAgent:
 
             return direction, self.max_speed
 
-        except Exception as e:
+        except Exception:
             # If Voronoi computation fails, use weighted escape
             direction = self._weighted_escape_direction(evader_pos, pursuer_positions)
             return direction, self.max_speed

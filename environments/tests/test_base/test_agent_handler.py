@@ -1,7 +1,9 @@
-import pytest
-import numpy as np
 import math
 import time
+
+import numpy as np
+import pytest
+
 from environments.base.agent_handler import AgentHandler
 
 

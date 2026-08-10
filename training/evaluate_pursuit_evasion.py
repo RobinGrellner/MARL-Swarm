@@ -10,8 +10,8 @@ import argparse
 from pathlib import Path
 
 import numpy as np
-from stable_baselines3 import PPO
 from sb3_contrib import TRPO
+from stable_baselines3 import PPO
 
 from environments.pursuit.pursuit_evasion_env import PursuitEvasionEnv
 
@@ -147,7 +147,7 @@ def main() -> None:
     model = load_model(args.model_path)
 
     print(f"{'=' * 70}")
-    print(f"Evaluating Pursuit-Evasion Policy")
+    print("Evaluating Pursuit-Evasion Policy")
     print(f"{'=' * 70}")
     print(f"Model: {args.model_path}")
     print(f"Pursuers: {args.num_pursuers}")

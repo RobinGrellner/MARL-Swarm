@@ -8,8 +8,9 @@ Tests cover:
 - Torus wrapping effects on distance calculations for termination
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 

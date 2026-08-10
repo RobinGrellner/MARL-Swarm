@@ -1,7 +1,8 @@
-import pytest
 import numpy as np
-from environments.rendezvous.rendezvous_env import RendezvousEnv
+import pytest
+
 from environments.pursuit.pursuit_env import PursuitEnv
+from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 
 @pytest.fixture

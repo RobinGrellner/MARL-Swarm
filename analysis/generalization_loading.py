@@ -3,12 +3,13 @@
 Pipeline:
   1. ``run_or_load_raw`` -- resolve all (variant, run) policy zips for a config,
      roll each out across the test-size grid, and persist per-episode rows to a
-     CSV cache (re-runs reuse the cache unless ``force=True``).
+     CSV cache (re-runs reuse the cache unless ``force=True``). Checkpoints are
+     evaluated across ``workers`` parallel processes.
   2. ``aggregate`` -- collapse episodes x eval-seeds to one score per
      (variant, run, test_size) cell.
   3. ``to_score_dict`` -- pivot a chosen metric into the rliable
-     ``{variant: (n_runs, n_test_sizes)}`` matrices, with the embed_dim variants
-     as the method axis and the test sizes as the task axis.
+     ``{variant: (n_runs, n_test_sizes)}`` matrices, with variants as the
+     method axis and the test sizes as the task axis.
 
 The score that matches the training analysis (``rollout/ep_rew_mean``) is
 ``ep_reward``. NOTE: raw episode reward is NOT comparable across test sizes (the
@@ -18,27 +19,60 @@ normalisation for the transfer views lives in ``run_generalization``.
 
 from __future__ import annotations
 
+import os
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
+import torch
 
 from analysis.generalization_eval import EpisodeResult, evaluate_variant
-from analysis.generalization_resolver import ConfigSpec, resolve_models
+from analysis.generalization_resolver import (
+    ConfigSpec,
+    ResolvedModel,
+    resolve_models,
+    variant_sort_key,
+)
 
 ScoreDict = Dict[str, np.ndarray]
 
 # Columns that uniquely identify an evaluation cell vs. the per-episode metrics.
 _CELL_KEYS = ["variant", "run", "test_size"]
-_METRICS = ["ep_reward", "max_pairwise_distance", "distance_to_com", "ep_length", "converged"]
+_METRICS = [
+    "ep_reward", "mean_pairwise_distance", "max_pairwise_distance", "distance_to_com",
+    "min_distance_to_evader", "capture_time", "ep_length", "converged",
+]
 
 
-def _variant_dim(variant: str) -> int:
-    """Sort key: embed_dim integer from a variant name like 'embed_dim16'."""
-    return int(variant.replace("embed_dim", ""))
+def _init_worker() -> None:
+    # Process-level parallelism already saturates the machine; per-process
+    # BLAS auto-threading on top of that only adds contention.
+    torch.set_num_threads(1)
+
+
+def _evaluate_model(
+    model: ResolvedModel,
+    *,
+    env_config: Dict[str, Any],
+    config: str,
+    train_size: int,
+    test_sizes: Sequence[int],
+    task: str,
+    n_episodes: int,
+    eval_seeds: Sequence[int],
+    device: str,
+    max_agents: int,
+) -> List[EpisodeResult]:
+    """Evaluate one resolved checkpoint; the unit of work for each pool worker."""
+    return evaluate_variant(
+        model.zip_path, env_config, config=config, variant=model.variant, run=model.run,
+        train_size=train_size, test_sizes=test_sizes, task=task, n_episodes=n_episodes,
+        eval_seeds=eval_seeds, device=device, max_agents=max_agents,
+    )
 
 
 def run_or_load_raw(
@@ -50,9 +84,10 @@ def run_or_load_raw(
     cache_path: Path,
     model_root: str | Path = "model",
     device: str = "cpu",
-    variants: Optional[Sequence[int]] = None,
+    variants: Optional[Sequence[str]] = None,
     force: bool = False,
     verbose: bool = True,
+    workers: int = 4,
 ) -> pd.DataFrame:
     """Return per-episode eval records, computing (and caching) them if needed."""
     cache_path = Path(cache_path)
@@ -72,33 +107,32 @@ def run_or_load_raw(
     if verbose:
         print(
             f"  resolved {len(models)} models; test sizes {list(test_sizes)}; "
-            f"{n_episodes} episodes x {len(eval_seeds)} seeds per cell",
+            f"{n_episodes} episodes x {len(eval_seeds)} seeds per cell; {workers} worker(s)",
             flush=True,
         )
 
-    records: List[EpisodeResult] = []
+    common_kwargs = dict(
+        env_config=spec.env_config, config=spec.stem, train_size=spec.train_size,
+        test_sizes=test_sizes, task=spec.task, n_episodes=n_episodes,
+        eval_seeds=eval_seeds, device=device, max_agents=spec.max_size,
+    )
+
     t0 = time.perf_counter()
-    for idx, m in enumerate(models, 1):
-        t_model = time.perf_counter()
-        recs = evaluate_variant(
-            m.zip_path,
-            spec.env_config,
-            config=spec.stem,
-            variant=m.variant,
-            run=m.run,
-            train_size=spec.train_size,
-            test_sizes=test_sizes,
-            n_episodes=n_episodes,
-            eval_seeds=eval_seeds,
-            device=device,
-        )
+    if workers <= 1:
+        pairs = [(m, _evaluate_model(m, **common_kwargs)) for m in models]
+    else:
+        os.environ.setdefault("OMP_NUM_THREADS", "1")
+        os.environ.setdefault("MKL_NUM_THREADS", "1")
+        os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+        with ProcessPoolExecutor(max_workers=workers, initializer=_init_worker) as pool:
+            futures = {pool.submit(_evaluate_model, m, **common_kwargs): m for m in models}
+            pairs = [(futures[f], f.result()) for f in as_completed(futures)]
+
+    records: List[EpisodeResult] = []
+    for idx, (m, recs) in enumerate(pairs, 1):
         records.extend(recs)
         if verbose:
-            print(
-                f"  [{idx:>3}/{len(models)}] {m.variant:<12} run {m.run} "
-                f"-> {len(recs):>4} eps in {time.perf_counter() - t_model:5.1f}s",
-                flush=True,
-            )
+            print(f"  [{idx:>3}/{len(models)}] {m.variant:<12} run {m.run} -> {len(recs):>4} eps", flush=True)
 
     df = pd.DataFrame([asdict(r) for r in records])
     cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -127,7 +161,7 @@ def to_score_dict(
     Missing (run, test_size) cells become NaN so callers can detect gaps.
     """
     test_sizes = sorted(int(s) for s in agg["test_size"].unique())
-    variants = sorted(agg["variant"].unique(), key=_variant_dim)
+    variants = sorted(agg["variant"].unique(), key=variant_sort_key)
     score_dict: ScoreDict = {}
     for v in variants:
         sub = agg[agg["variant"] == v]

@@ -24,6 +24,7 @@ import re
 from pathlib import Path
 from typing import Dict, Optional, Sequence
 
+from analysis import log_loading as ll
 from analysis import rliable_eval as rl
 from analysis.log_loading import DEFAULT_SCORE_TAG, load_config_scores, read_config_meta
 
@@ -42,6 +43,12 @@ def _pick_reference(methods: Sequence[str], explicit: Optional[str]) -> str:
     return sorted(methods)[-1]
 
 
+def _format_n_runs(n_runs: Dict[str, int]) -> str:
+    """``"5"`` if every variant has the same run count, else ``"4-5"``."""
+    counts = set(n_runs.values())
+    return str(counts.pop()) if len(counts) == 1 else f"{min(counts)}-{max(counts)}"
+
+
 def analyze(
     config_name: str,
     *,
@@ -57,8 +64,16 @@ def analyze(
     reference: Optional[str] = None,
     reps: int = rl.DEFAULT_REPS,
     confidence: float = rl.DEFAULT_CONFIDENCE,
+    require_complete: bool = False,
+    complete_tag: str = ll.BY_ITER_SCORE_TAG,
+    final_iteration: Optional[int] = None,
 ) -> Dict[str, object]:
     """Run the full single-config analysis and write all artifacts.
+
+    ``require_complete``, when set, excludes runs that don't reach the final
+    iteration from scoring (see :func:`analysis.log_loading._run_is_complete`)
+    instead of silently including a truncated run's premature score. Off by
+    default so this CLI's existing behavior is unchanged.
 
     Returns a dict with the loaded scores, metadata, aggregate point/interval
     estimates, the summary and probability-of-improvement DataFrames, and the
@@ -76,6 +91,9 @@ def analyze(
         reduction=reduction,
         last_k=last_k,
         min_runs=min_runs,
+        require_complete=require_complete,
+        complete_tag=complete_tag,
+        final_iteration=final_iteration,
     )
     normalized = rl.normalize_scores(raw_scores, method=normalize, reference=reference)
 
@@ -104,9 +122,7 @@ def analyze(
         rl.summary_text(point, interval, header=header, probability_of_improvement=poi)
     )
 
-    intervals_png = rl.plot_aggregate_intervals(
-        point, interval, output_path=figures_dir / "aggregate_intervals.png"
-    )
+    intervals_png = rl.plot_aggregate_intervals(point, interval, output_path=figures_dir / "aggregate_intervals.png")
     taus = rl.default_taus(normalized)
     profiles, profile_cis = rl.performance_profile(normalized, taus, reps=reps, confidence_interval_size=confidence)
     profiles_png = rl.plot_profiles(profiles, profile_cis, taus, output_path=figures_dir / "performance_profiles.png")
@@ -189,7 +205,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     meta = result["meta"]
     print(
         f"Analyzed '{args.config}' [{result['algorithm']}, {meta['study']}, {meta['environment']}, "
-        f"size {meta['size']}, {meta['n_runs']} runs/variant]"
+        f"size {meta['size']}, {_format_n_runs(meta['n_runs'])} runs/variant]"
     )
     print(f"Reference variant: {result['reference']}")
     print(f"\nImportant variables (point [95% CI]) written to {result['output_dir']}:\n")

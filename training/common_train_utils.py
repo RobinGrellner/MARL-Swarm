@@ -7,29 +7,26 @@ feature extraction across different multi-agent environments.
 from __future__ import annotations
 
 import argparse
-import copy
-from typing import Any, Dict, List, Optional, Tuple
-import warnings
-
-from supersuit import flatten_v0 as supersuit_flatten
-from supersuit import pettingzoo_env_to_vec_env_v1, concat_vec_envs_v1
-
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecMonitor, SubprocVecEnv
-from stable_baselines3.common.base_class import BaseAlgorithm
-from stable_baselines3.common.utils import safe_mean
-from sb3_contrib import TRPO
-from policies.mean_embedding_extractor import MeanEmbeddingExtractor
-
-import torch
-import numpy as np
-import time
-from collections import deque
-from stable_baselines3.common.callbacks import BaseCallback, CallbackList
-from stable_baselines3.common.logger import TensorBoardOutputFormat
-import psutil
 import gc
 import os
+import time
+import warnings
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import psutil
+import torch
+from sb3_contrib import TRPO
+from stable_baselines3 import PPO
+from stable_baselines3.common.base_class import BaseAlgorithm
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList
+from stable_baselines3.common.logger import TensorBoardOutputFormat
+from stable_baselines3.common.utils import safe_mean
+from stable_baselines3.common.vec_env import VecMonitor
+from supersuit import concat_vec_envs_v1, pettingzoo_env_to_vec_env_v1
+from supersuit import flatten_v0 as supersuit_flatten
+
+from policies.mean_embedding_extractor import MeanEmbeddingExtractor
 
 # Suppress render_mode warning from VecEnv
 warnings.filterwarnings("ignore", message=".*render_mode.*", category=UserWarning)
@@ -72,9 +69,15 @@ class MALRMetricsCallback(BaseCallback):
         if convergence_vel:
             self.logger.record("task/convergence_velocity_mean", float(np.mean(convergence_vel)))
 
-        capture_times = [ep["capture_time"] for ep in ep_info_buffer if "capture_time" in ep]
+        # capture_time is None on every non-capture step; coerce to nan so the
+        # aggregation doesn't choke, and use nanmean to average only real captures.
+        capture_times = [
+            ep["capture_time"] if ep["capture_time"] is not None else float("nan")
+            for ep in ep_info_buffer
+            if "capture_time" in ep
+        ]
         if capture_times:
-            self.logger.record("task/capture_time_mean", float(np.mean(capture_times)))
+            self.logger.record("task/capture_time_mean", float(np.nanmean(capture_times)))
 
 
 class IterationCounterCallback(BaseCallback):
@@ -184,7 +187,7 @@ class CheckpointCallback(BaseCallback):
     in case of interruption.
     """
 
-    def __init__(self, save_freq: int = 1_000_000, save_path: str = "models/", verbose: int = 0):
+    def __init__(self, save_freq: int = 1_000_000, save_path: str = "model/", verbose: int = 0):
         super().__init__(verbose)
         self.save_freq = save_freq
         self.save_path = save_path
@@ -359,6 +362,12 @@ def add_common_training_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--n-steps", type=int, default=None, help="Rollout length (defaults: PPO=1024, TRPO=2048)")
     parser.add_argument("--batch-size", type=int, default=None, help="Minibatch size (defaults: PPO=512, TRPO=128)")
     parser.add_argument("--n-epochs", type=int, default=None, help="Number of epochs (PPO only, default=5)")
+    parser.add_argument("--gamma", type=float, default=None, help="Discount factor (default: 0.99)")
+    parser.add_argument("--gae-lambda", type=float, default=None, help="GAE lambda (default: 0.98)")
+    parser.add_argument("--clip-range", type=float, default=None, help="PPO clipping range (PPO only, default: 0.2)")
+    parser.add_argument(
+        "--target-kl", type=float, default=None, help="Target KL divergence for early stopping (defaults: PPO=0.015, TRPO=0.01)"
+    )
     parser.add_argument("--model-path", type=str, default=None, help="Path to save the trained model")
     parser.add_argument("--resume-from", type=str, default=None, help="Path to a saved model to resume training from")
     parser.add_argument("--tensorboard-log", type=str, default=None, help="TensorBoard log directory")
@@ -385,6 +394,14 @@ def build_algo_params(args: argparse.Namespace, algorithm: str) -> Dict[str, Any
         algo_params["batch_size"] = args.batch_size
     if args.n_epochs is not None and algorithm == "ppo":
         algo_params["n_epochs"] = args.n_epochs
+    if args.gamma is not None:
+        algo_params["gamma"] = args.gamma
+    if args.gae_lambda is not None:
+        algo_params["gae_lambda"] = args.gae_lambda
+    if args.clip_range is not None and algorithm == "ppo":
+        algo_params["clip_range"] = args.clip_range
+    if args.target_kl is not None:
+        algo_params["target_kl"] = args.target_kl
     if args.tensorboard_log is not None:
         algo_params["tensorboard_log"] = args.tensorboard_log
     if args.seed is not None:
@@ -723,8 +740,8 @@ def run_training(
             layout,
             embed_dim=embed_config.get("embed_dim", 64),
             phi_layers=embed_config.get("phi_layers", 1),
-            phi_hidden_width=embed_config.get("phi_hidden_width", None),
-            policy_layers=embed_config.get("policy_layers", None),
+            phi_hidden_width=embed_config.get("phi_hidden_width"),
+            policy_layers=embed_config.get("policy_layers"),
             activation=embed_config.get("activation", "relu"),
             aggregation=embed_config.get("aggregation", "mean"),
         )
@@ -744,7 +761,7 @@ def run_training(
     memory_callback = MemoryDiagnosticCallback(verbose=1, log_every_n_rollouts=10)
 
     # Create checkpoint callback with automatic directory naming
-    checkpoint_dir = save_path.replace(".zip", "_checkpoints/") if save_path else "models/checkpoints/"
+    checkpoint_dir = save_path.replace(".zip", "_checkpoints/") if save_path else "model/checkpoints/"
     os.makedirs(checkpoint_dir, exist_ok=True)
     checkpoint_callback = CheckpointCallback(save_freq=1_000_000, save_path=checkpoint_dir, verbose=1)
 

@@ -9,8 +9,9 @@ Tests cover:
 - Edge cases
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from environments.pursuit.pursuit_evasion_env import PursuitEvasionEnv
 
 

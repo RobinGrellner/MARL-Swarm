@@ -2,9 +2,8 @@
 """Utilities for expanding experiment configs from matrix parameters."""
 
 import json
-from typing import Dict, Any, List, Tuple
-from pathlib import Path
 from itertools import product
+from typing import Any, Dict
 
 
 def expand_matrix_parameters(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:

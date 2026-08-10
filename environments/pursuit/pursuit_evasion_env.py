@@ -8,10 +8,11 @@ the evader follows a scripted policy (can be extended to be trainable).
 
 from __future__ import annotations
 
+from typing import Dict, Optional
+
 import numpy as np
 import pygame
 from gymnasium import spaces
-from typing import Dict, Tuple, Optional
 
 from environments.base.base_environment import BaseEnv
 from environments.pursuit.evasion_agent import create_evasion_agent
@@ -156,9 +157,7 @@ class PursuitEvasionEnv(BaseEnv):
         Bearings use (cos, sin) representation for neural network stability.
         This maintains scale-invariance: evader features don't participate in mean aggregation.
         """
-        if self.obs_model == "global_basic":
-            self._neighbour_feature_dim = 3  # distance, bearing_cos, bearing_sin
-        elif self.obs_model == "local_basic":
+        if self.obs_model == "global_basic" or self.obs_model == "local_basic":
             self._neighbour_feature_dim = 3  # distance, bearing_cos, bearing_sin
         elif self.obs_model == "global_extended":
             self._neighbour_feature_dim = 6  # distance, bearing_cos, bearing_sin, ori_cos, ori_sin, rel_velocity
@@ -200,7 +199,7 @@ class PursuitEvasionEnv(BaseEnv):
         # Observation bounds match Huttenrauch: all values in [-1, 1]
         # Distances are [0, 1], bearings/cos/sin are [-1, 1], mask is [0, 1]
         obs_space = spaces.Box(low=-1.0, high=1.0, shape=(self.obs_layout["total_dim"],), dtype=np.float32)
-        return {agent: obs_space for agent in self.agent_handler.agents}
+        return dict.fromkeys(self.agent_handler.agents, obs_space)
 
     def _reset_agents(self) -> None:
         """Reset pursuer and evader positions to random locations."""
@@ -393,7 +392,7 @@ class PursuitEvasionEnv(BaseEnv):
 
         # Use stored obs_radius for consistency with observations
         shared_reward = -np.minimum(min_dist, self.obs_radius) / self.obs_radius
-        rewards = {agent: shared_reward for agent in self.agents}
+        rewards = dict.fromkeys(self.agents, shared_reward)
 
         return rewards
 
@@ -403,11 +402,11 @@ class PursuitEvasionEnv(BaseEnv):
         distances = self._cached_evader_distances
         captured = np.any(distances < self.capture_radius)
 
-        return {agent: captured for agent in self.agents}
+        return dict.fromkeys(self.agents, captured)
 
     def _check_truncations(self) -> Dict[str, bool]:
         """Truncations are handled via step_count in BaseEnv."""
-        return {agent: False for agent in self.agents}
+        return dict.fromkeys(self.agents, False)
 
     def _get_infos(self) -> Dict[str, dict]:
         """Return additional information for each agent including task success and capture time."""

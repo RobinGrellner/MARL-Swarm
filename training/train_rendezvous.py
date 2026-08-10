@@ -4,8 +4,8 @@ import argparse
 from datetime import datetime
 
 from environments.rendezvous.rendezvous_env import RendezvousEnv
-from training.rendezvous_train_utils import run_training_rendezvous
 from training.common_train_utils import add_common_training_args, build_algo_params, build_embed_config
+from training.rendezvous_train_utils import run_training_rendezvous
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     add_common_training_args(parser)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    parser.set_defaults(model_path=f"models/rv_{timestamp}.zip")
+    parser.set_defaults(model_path=f"model/rv_{timestamp}.zip")
 
     return parser.parse_args()
 
@@ -81,7 +81,7 @@ def main() -> None:
     print(f"Total Timesteps: {args.total_timesteps:,}")
     print(f"Parallel Envs: {args.num_vec_envs}")
     print(f"{'=' * 60}")
-    print(f"Architecture Configuration:")
+    print("Architecture Configuration:")
     print(f"  Activation: {args.activation}")
     print(f"  Aggregation: {args.aggregation}")
     print(f"  Policy Layers: {args.policy_layers}")
@@ -101,7 +101,7 @@ def main() -> None:
     )
 
     print(f"\n{'=' * 60}")
-    print(f"Training Complete!")
+    print("Training Complete!")
     print(f"Model saved to: {args.model_path}")
     print(f"Total timesteps: {model.num_timesteps:,}")
     print(f"{'=' * 60}\n")

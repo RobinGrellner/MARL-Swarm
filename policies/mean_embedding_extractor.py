@@ -1,10 +1,10 @@
-from typing import List, Optional, Dict, Callable
+from typing import Callable, Dict, List, Optional
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from gymnasium import spaces
-
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
 # Mapping from string names to activation function constructors
 ACTIVATION_FUNCTIONS: Dict[str, Callable[[], nn.Module]] = {

@@ -8,6 +8,7 @@ using PPO or TRPO with parameter sharing and mean embedding feature extraction.
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
+
 from stable_baselines3.common.base_class import BaseAlgorithm
 
 from environments.pursuit.pursuit_evasion_env import PursuitEvasionEnv
@@ -46,9 +47,16 @@ def run_training_pursuit_evasion(
     Returns:
         Tuple of (trained model, info dict with vec_env)
     """
-    # Default logging keywords for Pursuit-Evasion: capture success metrics
+    # Default logging keywords for Pursuit-Evasion: capture success metrics.
+    # task_success + capture_time are required by MALRMetricsCallback; they must
+    # be in VecMonitor's info_keywords to survive into ep_info_buffer.
     if log_info_keys is None:
-        log_info_keys = ("evader_captured", "min_distance_to_evader")
+        log_info_keys = (
+            "evader_captured",
+            "min_distance_to_evader",
+            "task_success",
+            "capture_time",
+        )
 
     return run_training(
         env,

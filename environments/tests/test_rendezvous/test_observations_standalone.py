@@ -4,6 +4,7 @@ Run with: python test_observations_standalone.py
 """
 
 import numpy as np
+
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 
@@ -60,7 +61,7 @@ def test_padded_slots_have_zero_mask():
         )
 
     env.close()
-    print(f"✓ PASSED: Padded slots correctly have mask=0 (max_agents=10, actual=3)")
+    print("✓ PASSED: Padded slots correctly have mask=0 (max_agents=10, actual=3)")
 
 
 def test_observation_dimensions():

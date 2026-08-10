@@ -10,8 +10,6 @@ sanity check that the environment behaves as expected.
 
 from __future__ import annotations
 
-import numpy as np
-
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 

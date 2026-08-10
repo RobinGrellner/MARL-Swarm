@@ -1,10 +1,12 @@
-from environments.base.base_environment import BaseEnv
-from environments.rendezvous.observations_vectorized import compute_observations_vectorized
-from typing import Dict, List, Optional, Tuple
-import numpy as np
 import math
+from typing import Dict, Optional, Tuple
+
+import numpy as np
 import pygame
 from gymnasium import spaces
+
+from environments.base.base_environment import BaseEnv
+from environments.rendezvous.observations_vectorized import compute_observations_vectorized
 
 
 class RendezvousEnv(BaseEnv):
@@ -348,7 +350,7 @@ class RendezvousEnv(BaseEnv):
         If break_distance_threshold is set, terminate when all pairwise
         distances are below the threshold (successful rendezvous).
         """
-        terminations = {name: False for name in self.agent_names}
+        terminations = dict.fromkeys(self.agent_names, False)
 
         if self.break_distance_threshold is not None:
             assert self._cached_distances is not None, "Distance matrix not cached!"
@@ -356,13 +358,13 @@ class RendezvousEnv(BaseEnv):
             max_pairwise = np.max(distances)
 
             if max_pairwise < self.break_distance_threshold:
-                terminations = {name: True for name in self.agent_names}
+                terminations = dict.fromkeys(self.agent_names, True)
 
         return terminations
 
     def _check_truncations(self) -> Dict[str, bool]:
         """Truncations are handled via step_count in BaseEnv."""
-        return {name: False for name in self.agent_names}
+        return dict.fromkeys(self.agent_names, False)
 
     # ------------------------------------------------------------------
     # Info and intermediate steps
@@ -376,6 +378,8 @@ class RendezvousEnv(BaseEnv):
 
         assert self._cached_distances is not None, "Distance matrix not cached!"
         max_pairwise = float(np.max(self._cached_distances))
+        n = len(self._cached_distances)
+        mean_pairwise = float(np.mean(self._cached_distances[np.triu_indices(n, k=1)]))
 
         # Compute convergence velocity: rate of decrease in max_pairwise_distance
         convergence_velocity = 0.0
@@ -393,6 +397,7 @@ class RendezvousEnv(BaseEnv):
             infos[name] = {
                 "distance_to_com": float(dists[idx]),
                 "max_pairwise_distance": max_pairwise,
+                "mean_pairwise_distance": mean_pairwise,
                 "convergence_velocity": convergence_velocity,
                 "task_success": task_success,
             }

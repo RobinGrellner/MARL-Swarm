@@ -1,6 +1,5 @@
 {
   "matrix_parameters": {
-    "activation": ["relu", "tanh"],
     "phi_layers": [1, 2, 4],
     "phi_hidden_width": [32, 64, 128],
     "seed": [0]

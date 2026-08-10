@@ -17,14 +17,14 @@ Options:
     --continuation-timesteps N  Additional training duration (default: 3000000)
 """
 
-import json
-import subprocess
 import argparse
-import sys
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 import datetime
 import io
+import json
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Force UTF-8 output on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -65,15 +65,7 @@ class ArchitectureScalabilityContinuation:
             if exp_name.startswith("_"):
                 continue  # Skip metadata entries
 
-            if tier == "1" and exp_name.startswith(("baseline", "activation", "aggregation", "depth", "width")):
-                tier_configs[exp_name] = exp_config
-            elif tier == "2" and exp_name.startswith(("deep_", "attention_")):
-                tier_configs[exp_name] = exp_config
-            elif tier == "2b" and exp_name.startswith("train_size"):
-                tier_configs[exp_name] = exp_config
-            elif tier == "2c" and exp_name.startswith("gen_"):
-                tier_configs[exp_name] = exp_config
-            elif tier == "3" and exp_name.startswith("robustness"):
+            if tier == "1" and exp_name.startswith(("baseline", "activation", "aggregation", "depth", "width")) or tier == "2" and exp_name.startswith(("deep_", "attention_")) or tier == "2b" and exp_name.startswith("train_size") or tier == "2c" and exp_name.startswith("gen_") or tier == "3" and exp_name.startswith("robustness"):
                 tier_configs[exp_name] = exp_config
             elif tier == "all":
                 if not exp_name.startswith("_"):
@@ -104,10 +96,10 @@ class ArchitectureScalabilityContinuation:
         policy_layers_str = ",".join(str(x) for x in policy_layers)
 
         # Build model path (for saving updated model after continuation)
-        model_path = f"models/architecture_scalability_{exp_name}_5m.zip"
+        model_path = f"model/architecture_scalability_{exp_name}_5m.zip"
 
         # Build path to saved model from first round
-        resume_from = f"models/architecture_scalability_{exp_name}.zip"
+        resume_from = f"model/architecture_scalability_{exp_name}.zip"
 
         # Build log path (use same directory as original to merge logs)
         log_path = f"{self.tensorboard_log}/{exp_name}"
@@ -171,7 +163,7 @@ class ArchitectureScalabilityContinuation:
             return None  # Skip, not a failure
 
         if self.dry_run:
-            print(f"DRY RUN - Would execute:")
+            print("DRY RUN - Would execute:")
             print(" ".join(cmd))
             return True
 
@@ -218,7 +210,7 @@ class ArchitectureScalabilityContinuation:
     def print_summary(self) -> None:
         """Print continuation summary."""
         print(f"\n{'=' * 80}")
-        print(f"CONTINUATION SUMMARY")
+        print("CONTINUATION SUMMARY")
         print(f"{'=' * 80}")
         print(f"Total experiments: {self.total_experiments}")
         print(f"Completed successfully: {self.completed_experiments}")
@@ -228,9 +220,9 @@ class ArchitectureScalabilityContinuation:
             success_rate = (self.completed_experiments / self.total_experiments) * 100
             print(f"Success rate: {success_rate:.1f}%")
         print(f"\nTensorBoard logs (merged 2M + 3M): {self.tensorboard_log}")
-        print(f"Models after 2M steps: models/architecture_scalability_*.zip")
-        print(f"Models after 5M steps: models/architecture_scalability_*_5m.zip")
-        print(f"\nTo view full training progress (2M + 3M merged):")
+        print("Models after 2M steps: model/architecture_scalability_*.zip")
+        print("Models after 5M steps: model/architecture_scalability_*_5m.zip")
+        print("\nTo view full training progress (2M + 3M merged):")
         print(f"  tensorboard --logdir {self.tensorboard_log}")
         print(f"{'=' * 80}")
         print()
@@ -294,7 +286,7 @@ def main():
 
     # Print continuation info
     print(f"\n{'=' * 80}")
-    print(f"ARCHITECTURE SCALABILITY EXPERIMENTS - CONTINUATION")
+    print("ARCHITECTURE SCALABILITY EXPERIMENTS - CONTINUATION")
     print(f"{'=' * 80}")
     print(f"Start time: {datetime.datetime.now()}")
     print(f"Config: {config_path}")
@@ -303,7 +295,7 @@ def main():
     print(f"TensorBoard logs: {args.tensorboard_log}")
     print(f"Parallel environments: {args.num_vec_envs}")
     if args.dry_run:
-        print(f"Mode: DRY RUN (no training will execute)")
+        print("Mode: DRY RUN (no training will execute)")
     print(f"{'=' * 80}\n")
 
     # Run continuations

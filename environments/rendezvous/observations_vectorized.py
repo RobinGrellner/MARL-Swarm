@@ -6,6 +6,7 @@ vectorized NumPy operations instead of Python loops.
 """
 
 from typing import Dict
+
 import numpy as np
 
 

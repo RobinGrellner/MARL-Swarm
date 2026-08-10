@@ -11,8 +11,8 @@ import argparse
 from datetime import datetime
 
 from environments.pursuit.pursuit_evasion_env import PursuitEvasionEnv
-from training.pursuit_evasion_train_utils import run_training_pursuit_evasion
 from training.common_train_utils import add_common_training_args, build_algo_params, build_embed_config
+from training.pursuit_evasion_train_utils import run_training_pursuit_evasion
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
 
     # Override default model path for pursuit-evasion with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    parser.set_defaults(model_path=f"models/pe_{timestamp}.zip")
+    parser.set_defaults(model_path=f"model/pe_{timestamp}.zip")
 
     return parser.parse_args()
 
@@ -92,7 +92,7 @@ def main() -> None:
     print(f"Evader Strategy: {args.evader_strategy} (Huttenrauch)")
     print(f"Total Timesteps: {args.total_timesteps:,}")
     print(f"Parallel Envs: {args.num_vec_envs}")
-    print(f"\nArchitecture:")
+    print("\nArchitecture:")
     print(f"  Activation: {args.activation}")
     print(f"  Aggregation: {args.aggregation}")
     print(f"  Embed Dim: {args.embed_dim}")
@@ -113,7 +113,7 @@ def main() -> None:
     )
 
     print(f"\n{'=' * 60}")
-    print(f"Training Complete!")
+    print("Training Complete!")
     print(f"Model saved to: {args.model_path}")
     print(f"Total timesteps: {model.num_timesteps:,}")
     print(f"{'=' * 60}\n")

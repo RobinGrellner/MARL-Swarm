@@ -10,8 +10,9 @@ Tests cover:
 - Reward normalization properties
 """
 
-import pytest
 import numpy as np
+import pytest
+
 from environments.rendezvous.rendezvous_env import RendezvousEnv
 
 
@@ -91,7 +92,7 @@ class TestRendezvousRewardCalculation:
 
         expected_reward = -1.0
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), f"Distance should be clipped to d_c"
+            assert np.isclose(reward, expected_reward, atol=1e-5), "Distance should be clipped to d_c"
 
     def test_action_penalty(self):
         """Test that action penalty is correctly applied."""
@@ -204,7 +205,7 @@ class TestRendezvousRewardWithTorus:
 
         expected_reward = -0.1
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), f"Torus wrapping should give shortest distance"
+            assert np.isclose(reward, expected_reward, atol=1e-5), "Torus wrapping should give shortest distance"
 
     def test_torus_wrapping_diagonal(self):
         """Test torus wrapping with diagonal distances."""
@@ -229,7 +230,7 @@ class TestRendezvousRewardWithTorus:
         # reward = -0.1 * sqrt(2)
         expected_reward = -0.1 * np.sqrt(2)
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), f"Torus wrapping should handle diagonal distances"
+            assert np.isclose(reward, expected_reward, atol=1e-5), "Torus wrapping should handle diagonal distances"
 
 
 class TestRendezvousRewardNormalization:
@@ -277,7 +278,7 @@ class TestRendezvousRewardNormalization:
 
         expected_reward = -1.0
         for reward in rewards.values():
-            assert np.isclose(reward, expected_reward, atol=1e-5), f"Worst case reward should be approximately -1.0"
+            assert np.isclose(reward, expected_reward, atol=1e-5), "Worst case reward should be approximately -1.0"
 
     def test_reward_scale_invariant_to_world_size(self):
         """Test that reward normalization makes it scale-invariant."""
