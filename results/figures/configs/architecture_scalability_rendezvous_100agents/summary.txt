@@ -1,0 +1,26 @@
+architecture_scalability_rendezvous_100agents  [PPO, architecture, rendezvous, size 100]
+========================================================================================
+
+Aggregate scores (point [95% CI]):
+                                               Median                   IQM                  Mean        Optimality Gap
+config                                                                                                                 
+phi_layers1_phi_hidden_width128  0.230 [0.048, 0.544]  0.094 [0.034, 0.617]  0.230 [0.048, 0.544]  0.770 [0.456, 0.952]
+phi_layers1_phi_hidden_width32   0.550 [0.358, 0.722]  0.558 [0.294, 0.782]  0.550 [0.358, 0.722]  0.450 [0.278, 0.642]
+phi_layers1_phi_hidden_width64   0.717 [0.429, 0.951]  0.807 [0.328, 0.999]  0.717 [0.429, 0.951]  0.283 [0.049, 0.571]
+phi_layers2_phi_hidden_width128  0.214 [0.050, 0.465]  0.112 [0.028, 0.528]  0.214 [0.050, 0.465]  0.786 [0.535, 0.950]
+phi_layers2_phi_hidden_width32   0.420 [0.100, 0.740]  0.386 [0.068, 0.883]  0.420 [0.100, 0.740]  0.580 [0.260, 0.900]
+phi_layers2_phi_hidden_width64   0.413 [0.087, 0.750]  0.365 [0.061, 0.902]  0.413 [0.087, 0.750]  0.587 [0.250, 0.913]
+phi_layers4_phi_hidden_width128  0.103 [0.051, 0.141]  0.121 [0.035, 0.150]  0.103 [0.051, 0.141]  0.897 [0.859, 0.949]
+phi_layers4_phi_hidden_width32   0.210 [0.036, 0.480]  0.105 [0.013, 0.546]  0.210 [0.036, 0.480]  0.790 [0.520, 0.964]
+phi_layers4_phi_hidden_width64   0.264 [0.125, 0.508]  0.160 [0.107, 0.554]  0.264 [0.125, 0.508]  0.736 [0.492, 0.875]
+
+Probability of improvement vs reference:
+                       config_x                       config_y  p_improvement  ci_low  ci_high
+phi_layers1_phi_hidden_width128 phi_layers4_phi_hidden_width64           0.28    0.00     0.68
+ phi_layers1_phi_hidden_width32 phi_layers4_phi_hidden_width64           0.84    0.52     1.00
+ phi_layers1_phi_hidden_width64 phi_layers4_phi_hidden_width64           0.84    0.52     1.00
+phi_layers2_phi_hidden_width128 phi_layers4_phi_hidden_width64           0.28    0.00     0.64
+ phi_layers2_phi_hidden_width32 phi_layers4_phi_hidden_width64           0.60    0.20     1.00
+ phi_layers2_phi_hidden_width64 phi_layers4_phi_hidden_width64           0.52    0.12     0.88
+phi_layers4_phi_hidden_width128 phi_layers4_phi_hidden_width64           0.24    0.00     0.60
+ phi_layers4_phi_hidden_width32 phi_layers4_phi_hidden_width64           0.36    0.00     0.80

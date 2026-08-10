@@ -1,0 +1,1332 @@
+{
+  "reps": 50000,
+  "embedding_final_scores": [
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "embed_dim": 4,
+      "iqm": 0.488349298083045,
+      "ci_low": 0.15883742054982752,
+      "ci_high": 0.5885541295650879,
+      "ci_width": 0.4297167090152604
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "embed_dim": 8,
+      "iqm": 0.5343018853749234,
+      "ci_low": 0.3352431102325976,
+      "ci_high": 0.6325915245365162,
+      "ci_width": 0.2973484143039186
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "embed_dim": 16,
+      "iqm": 0.6790044050180651,
+      "ci_low": 0.5306974162558827,
+      "ci_high": 0.8678560710314468,
+      "ci_width": 0.33715865477556406
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "embed_dim": 32,
+      "iqm": 0.7409598084698493,
+      "ci_low": 0.41740803782700747,
+      "ci_high": 0.9400281376479255,
+      "ci_width": 0.5226200998209181
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "embed_dim": 64,
+      "iqm": 0.8547063805302525,
+      "ci_low": 0.6985264084202879,
+      "ci_high": 0.9160364569324236,
+      "ci_width": 0.21751004851213573
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "embed_dim": 128,
+      "iqm": 0.9029080979073635,
+      "ci_low": 0.7055829135589414,
+      "ci_high": 0.9827266643909572,
+      "ci_width": 0.2771437508320158
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "embed_dim": 4,
+      "iqm": 0.9501378227540925,
+      "ci_low": 0.9261275260505482,
+      "ci_high": 0.9764227593919522,
+      "ci_width": 0.050295233341404066
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "embed_dim": 8,
+      "iqm": 0.9765135475745228,
+      "ci_low": 0.940571286703479,
+      "ci_high": 0.9939561019989731,
+      "ci_width": 0.053384815295494104
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "embed_dim": 16,
+      "iqm": 0.9816342068297711,
+      "ci_low": 0.975371401833642,
+      "ci_high": 0.9945371824281519,
+      "ci_width": 0.019165780594509907
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "embed_dim": 32,
+      "iqm": 0.97955166380085,
+      "ci_low": 0.965709243341858,
+      "ci_high": 0.9976920406612665,
+      "ci_width": 0.03198279731940845
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "embed_dim": 64,
+      "iqm": 0.9778411967643924,
+      "ci_low": 0.3179533379315427,
+      "ci_high": 0.9974243845131475,
+      "ci_width": 0.6794710465816048
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "embed_dim": 128,
+      "iqm": 0.9929675155597898,
+      "ci_low": 0.9833810336848607,
+      "ci_high": 0.998180486033008,
+      "ci_width": 0.01479945234814728
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "embed_dim": 4,
+      "iqm": 0.43046675183120514,
+      "ci_low": 0.00709541142213868,
+      "ci_high": 0.7541972383453636,
+      "ci_width": 0.7471018269232249
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "embed_dim": 8,
+      "iqm": 0.6474262516949986,
+      "ci_low": 0.1721961399915066,
+      "ci_high": 0.9597181588056176,
+      "ci_width": 0.787522018814111
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "embed_dim": 16,
+      "iqm": 0.8494518166190863,
+      "ci_low": 0.6974664936240708,
+      "ci_high": 0.966465149951672,
+      "ci_width": 0.2689986563276012
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "embed_dim": 32,
+      "iqm": 0.9464161112698942,
+      "ci_low": 0.8602684771906524,
+      "ci_high": 0.9908647944978002,
+      "ci_width": 0.13059631730714782
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "embed_dim": 64,
+      "iqm": 0.9276460757403685,
+      "ci_low": 0.775377811068222,
+      "ci_high": 0.9996697203092898,
+      "ci_width": 0.2242919092410678
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "embed_dim": 128,
+      "iqm": 0.752165883988725,
+      "ci_low": 0.23217715546493742,
+      "ci_high": 0.8510147385271468,
+      "ci_width": 0.6188375830622094
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "embed_dim": 4,
+      "iqm": 0.1673094685305736,
+      "ci_low": 0.08126384053985142,
+      "ci_high": 0.7054148570987165,
+      "ci_width": 0.6241510165588651
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "embed_dim": 8,
+      "iqm": 0.442452560067,
+      "ci_low": 0.08236644866323216,
+      "ci_high": 0.8049790532161306,
+      "ci_width": 0.7226126045528984
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "embed_dim": 16,
+      "iqm": 0.6014997005541446,
+      "ci_low": 0.02941630288451116,
+      "ci_high": 0.9462468066797897,
+      "ci_width": 0.9168305037952785
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "embed_dim": 32,
+      "iqm": 0.385462663159802,
+      "ci_low": 0.02419475394070211,
+      "ci_high": 0.7187249875967292,
+      "ci_width": 0.6945302336560271
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "embed_dim": 64,
+      "iqm": 0.5529396812440139,
+      "ci_low": 0.16581880081512032,
+      "ci_high": 0.9302512959668828,
+      "ci_width": 0.7644324951517625
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "embed_dim": 128,
+      "iqm": 0.6266741467899092,
+      "ci_low": 0.2144161124896146,
+      "ci_high": 0.8092383647655638,
+      "ci_width": 0.5948222522759492
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "embed_dim": 4,
+      "iqm": 0.3730311901416196,
+      "ci_low": 0.08224012663441059,
+      "ci_high": 0.6628120130888212,
+      "ci_width": 0.5805718864544106
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "embed_dim": 8,
+      "iqm": 0.8837307392048959,
+      "ci_low": 0.6037810367464452,
+      "ci_high": 0.9518774760407854,
+      "ci_width": 0.3480964392943402
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "embed_dim": 16,
+      "iqm": 0.9694838349998817,
+      "ci_low": 0.9472818505580426,
+      "ci_high": 0.9927536556397265,
+      "ci_width": 0.045471805081683914
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "embed_dim": 32,
+      "iqm": 0.9387993230627861,
+      "ci_low": 0.7436105416175485,
+      "ci_high": 0.9803264549759377,
+      "ci_width": 0.23671591335838926
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "embed_dim": 64,
+      "iqm": 0.9482667633531978,
+      "ci_low": 0.6695992674845189,
+      "ci_high": 0.9759648447536565,
+      "ci_width": 0.3063655772691376
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "embed_dim": 128,
+      "iqm": 0.5862227954522604,
+      "ci_low": 0.11351960806965607,
+      "ci_high": 0.900120945808661,
+      "ci_width": 0.7866013377390049
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "embed_dim": 4,
+      "iqm": 0.8787539018515957,
+      "ci_low": 0.5803788759756376,
+      "ci_high": 0.977878026189338,
+      "ci_width": 0.3974991502137003
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "embed_dim": 8,
+      "iqm": 0.9907032092661227,
+      "ci_low": 0.957971042105183,
+      "ci_high": 0.9994896893119815,
+      "ci_width": 0.04151864720679843
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "embed_dim": 16,
+      "iqm": 0.8981327254478759,
+      "ci_low": 0.7277335011624112,
+      "ci_high": 0.9632542631857097,
+      "ci_width": 0.23552076202329852
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "embed_dim": 32,
+      "iqm": 0.8670768822139974,
+      "ci_low": 0.6502328443735181,
+      "ci_high": 0.9802523966982711,
+      "ci_width": 0.330019552324753
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "embed_dim": 64,
+      "iqm": 0.7954923331810813,
+      "ci_low": 0.6843631910922578,
+      "ci_high": 0.973166026155397,
+      "ci_width": 0.2888028350631392
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "embed_dim": 128,
+      "iqm": 0.5035190099404051,
+      "ci_low": 0.1257045604385729,
+      "ci_high": 0.8654574511378995,
+      "ci_width": 0.7397528906993266
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "embed_dim": 4,
+      "iqm": 0.977843999124432,
+      "ci_low": 0.870441144238916,
+      "ci_high": 0.9978097542844444,
+      "ci_width": 0.12736861004552835
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "embed_dim": 8,
+      "iqm": 0.8875961652639685,
+      "ci_low": 0.6365399162361912,
+      "ci_high": 0.9911900930305495,
+      "ci_width": 0.3546501767943583
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "embed_dim": 16,
+      "iqm": 0.8139294523225429,
+      "ci_low": 0.41804319961298736,
+      "ci_high": 0.9678258248474697,
+      "ci_width": 0.5497826252344824
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "embed_dim": 32,
+      "iqm": 0.39746143094301395,
+      "ci_low": 0.3314248316291513,
+      "ci_high": 0.5227587653018144,
+      "ci_width": 0.1913339336726631
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "embed_dim": 64,
+      "iqm": 0.525118405296882,
+      "ci_low": 0.14281687747287644,
+      "ci_high": 0.7020478642905781,
+      "ci_width": 0.5592309868177017
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "embed_dim": 128,
+      "iqm": 0.6015335034139215,
+      "ci_low": 0.327542833379088,
+      "ci_high": 0.8236262651182124,
+      "ci_width": 0.49608343173912434
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "embed_dim": 4,
+      "iqm": 0.9842397163384055,
+      "ci_low": 0.846435551744008,
+      "ci_high": 0.9995415536127178,
+      "ci_width": 0.15310600186870982
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "embed_dim": 8,
+      "iqm": 0.9414665358991208,
+      "ci_low": 0.6048800449912805,
+      "ci_high": 0.9795942270611278,
+      "ci_width": 0.3747141820698473
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "embed_dim": 16,
+      "iqm": 0.6407591171072315,
+      "ci_low": 0.14814299058591834,
+      "ci_high": 0.972777234236396,
+      "ci_width": 0.8246342436504777
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "embed_dim": 32,
+      "iqm": 0.5129340608180023,
+      "ci_low": 0.15739129400386342,
+      "ci_high": 0.875033213977351,
+      "ci_width": 0.7176419199734876
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "embed_dim": 64,
+      "iqm": 0.7998066964667073,
+      "ci_low": 0.7539394995999439,
+      "ci_high": 0.934439722384758,
+      "ci_width": 0.18050022278481415
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "embed_dim": 128,
+      "iqm": 0.6286447377352219,
+      "ci_low": 0.32159650985728644,
+      "ci_high": 0.9529939930696766,
+      "ci_width": 0.6313974832123901
+    }
+  ],
+  "embedding_smallest_overlapping_k": [
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 8,
+      "per_k_overlap": {
+        "4": false,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 4,
+      "per_k_overlap": {
+        "4": true,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 8,
+      "per_k_overlap": {
+        "4": false,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 4,
+      "per_k_overlap": {
+        "4": true,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 16,
+      "per_k_overlap": {
+        "4": false,
+        "8": false,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 4,
+      "per_k_overlap": {
+        "4": true,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 8,
+      "per_k_overlap": {
+        "4": false,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "reference_embed_dim": 64,
+      "smallest_overlapping_k": 4,
+      "per_k_overlap": {
+        "4": true,
+        "8": true,
+        "16": true,
+        "32": true,
+        "64": true,
+        "128": true
+      }
+    }
+  ],
+  "architecture_final_scores": [
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.6779453073828391,
+      "ci_low": 0.33399508592014165,
+      "ci_high": 0.7661697602412781
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.6714695513986815,
+      "ci_low": 0.6301208064699105,
+      "ci_high": 0.8992339153028039
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.6685244970867634,
+      "ci_low": 0.3102493522276306,
+      "ci_high": 0.9019233568361523
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.474512915401981,
+      "ci_low": 0.3078846553133923,
+      "ci_high": 0.6680303621781563
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.7557841086980407,
+      "ci_low": 0.6335013099931932,
+      "ci_high": 0.8364965414681342
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.7657636204330398,
+      "ci_low": 0.6566796631405302,
+      "ci_high": 0.9130521896008233
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.5392777775102137,
+      "ci_low": 0.1287834214153919,
+      "ci_high": 0.8261100314904954
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.487519723923929,
+      "ci_low": 0.25180275683643777,
+      "ci_high": 0.8880219035892103
+    },
+    {
+      "task": "rendezvous",
+      "size": 4,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.5921897118621452,
+      "ci_low": 0.33282574218677535,
+      "ci_high": 0.7126187270519303
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.9698349150351512,
+      "ci_low": 0.9330995643980761,
+      "ci_high": 0.9921790867475299
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.960767314911076,
+      "ci_low": 0.9429644595107042,
+      "ci_high": 0.9853467583597256
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.9620984059358642,
+      "ci_low": 0.9507885665330774,
+      "ci_high": 0.9752360063893057
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.9391962566673359,
+      "ci_low": 0.3094824291076821,
+      "ci_high": 0.9640257855685245
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.969046191567548,
+      "ci_low": 0.9406776877131605,
+      "ci_high": 0.9939142835503811
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.9415610484164008,
+      "ci_low": 0.774177071628103,
+      "ci_high": 0.9755870440126421
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.9538383522425917,
+      "ci_low": 0.9461118675917176,
+      "ci_high": 0.9660792836445711
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.9254328575726946,
+      "ci_low": 0.8701716386107332,
+      "ci_high": 0.9736288449594115
+    },
+    {
+      "task": "rendezvous",
+      "size": 16,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.925121123264581,
+      "ci_low": 0.8932134508446042,
+      "ci_high": 0.935927930972316
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.8876576028084383,
+      "ci_low": 0.32861330884803536,
+      "ci_high": 0.9848605286861983
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.9572474605527207,
+      "ci_low": 0.8580899975019415,
+      "ci_high": 0.9978701370495204
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.7889566640845448,
+      "ci_low": 0.23429836414991992,
+      "ci_high": 0.9570300678796091
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.8633003936353038,
+      "ci_low": 0.688728773975957,
+      "ci_high": 0.9750591778056966
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.6294493006431289,
+      "ci_low": 0.15883236683209967,
+      "ci_high": 0.9694538763943336
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.7161264994267406,
+      "ci_low": 0.12353322880114158,
+      "ci_high": 0.9893740759279331
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.08863495954694976,
+      "ci_low": 0.05634486467758434,
+      "ci_high": 0.47244500869248895
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.2569846371168441,
+      "ci_low": 0.044453165362368686,
+      "ci_high": 0.6704305160586285
+    },
+    {
+      "task": "rendezvous",
+      "size": 50,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.07841638070062222,
+      "ci_low": 0.012706768746377018,
+      "ci_high": 0.16455035676587615
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.5583397063851768,
+      "ci_low": 0.2944014598251779,
+      "ci_high": 0.781984309534893
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.8070363199119086,
+      "ci_low": 0.3283547939861677,
+      "ci_high": 0.998553156835976
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.09363574344240154,
+      "ci_low": 0.03354299272421926,
+      "ci_high": 0.6169290112054137
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.3859715142037777,
+      "ci_low": 0.06811841958971286,
+      "ci_high": 0.8829351763799628
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.36451218319903456,
+      "ci_low": 0.06142160414621717,
+      "ci_high": 0.9020535288606556
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.11197036765301564,
+      "ci_low": 0.028100024457622663,
+      "ci_high": 0.5283288162309149
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.10496649651287886,
+      "ci_low": 0.01321188761065298,
+      "ci_high": 0.545965262744814
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.16039513917235274,
+      "ci_low": 0.10650359615811207,
+      "ci_high": 0.5543508284664823
+    },
+    {
+      "task": "rendezvous",
+      "size": 100,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.1211423939597766,
+      "ci_low": 0.03547174287257682,
+      "ci_high": 0.1500814982304651
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.9774886771805948,
+      "ci_low": 0.5430181475788537,
+      "ci_high": 0.9944449061404028
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.9113560607191862,
+      "ci_low": 0.6317855108915166,
+      "ci_high": 0.9920881773890132
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.772421257470388,
+      "ci_low": 0.4957873449152572,
+      "ci_high": 0.9757306382263592
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.9403304501121993,
+      "ci_low": 0.48807765326046165,
+      "ci_high": 0.9711612002222921
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.6200986359046127,
+      "ci_low": 0.19445892418591115,
+      "ci_high": 0.8277350850120012
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.36518075486486296,
+      "ci_low": 0.13256092615898082,
+      "ci_high": 0.4822635974254997
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.41788511273607415,
+      "ci_low": 0.09895595172873191,
+      "ci_high": 0.7023403319865246
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.17561406348897357,
+      "ci_low": 0.015540902866905253,
+      "ci_high": 0.41822723676613327
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 4,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.4090468949984909,
+      "ci_low": 0.3471947656218098,
+      "ci_high": 0.5719077134703957
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.7116583001018149,
+      "ci_low": 0.6144690654390245,
+      "ci_high": 0.8475711821723052
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.6583290617420025,
+      "ci_low": 0.4392534913858113,
+      "ci_high": 0.8786124407425402
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.6826250294608723,
+      "ci_low": 0.49663230152163873,
+      "ci_high": 0.8689365569082512
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.7245008442005844,
+      "ci_low": 0.34700763718737,
+      "ci_high": 0.9139579503143662
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.6074404982082827,
+      "ci_low": 0.49076868427540976,
+      "ci_high": 0.6477875809782875
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.5840700211488125,
+      "ci_low": 0.4119955031162188,
+      "ci_high": 0.7155091601865609
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.5953001071256744,
+      "ci_low": 0.4136304207354613,
+      "ci_high": 0.7280472001562791
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.39865051588191114,
+      "ci_low": 0.330538233895833,
+      "ci_high": 0.5234086745611276
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 16,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.41171728163973986,
+      "ci_low": 0.10902436172279117,
+      "ci_high": 0.47815054754534675
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.7942144279086544,
+      "ci_low": 0.26663214857235384,
+      "ci_high": 0.9881219178719306
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.7349409533835992,
+      "ci_low": 0.2900234325455979,
+      "ci_high": 0.8622190199684922
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.8369092186681399,
+      "ci_low": 0.6330501234580309,
+      "ci_high": 0.9657439660414667
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.5338623262229754,
+      "ci_low": 0.30083143706877785,
+      "ci_high": 0.6681537912208156
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.5481494647312583,
+      "ci_low": 0.1396059547186452,
+      "ci_high": 0.6701711670121102
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.47461887954368503,
+      "ci_low": 0.38126086953446264,
+      "ci_high": 0.5626357099275442
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.5199969177489705,
+      "ci_low": 0.40398702988043494,
+      "ci_high": 0.6053492623624425
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.4971884618327798,
+      "ci_low": 0.3707743367620954,
+      "ci_high": 0.6558112200741109
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 50,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.5018876310844788,
+      "ci_low": 0.46151018792972387,
+      "ci_high": 0.5702859768327337
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 1,
+      "width": 32,
+      "iqm": 0.9096102976829146,
+      "ci_low": 0.41566806510627957,
+      "ci_high": 0.9971313103991691
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 1,
+      "width": 64,
+      "iqm": 0.8570791667028517,
+      "ci_low": 0.29321013857976574,
+      "ci_high": 0.9819207250932521
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 1,
+      "width": 128,
+      "iqm": 0.6706538399607737,
+      "ci_low": 0.25279030968791477,
+      "ci_high": 0.9142144162181758
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 2,
+      "width": 32,
+      "iqm": 0.5937559605323438,
+      "ci_low": 0.310301480865093,
+      "ci_high": 0.8438929451318433
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 2,
+      "width": 64,
+      "iqm": 0.3139392986941692,
+      "ci_low": 0.11271128341990962,
+      "ci_high": 0.4581387727947496
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 2,
+      "width": 128,
+      "iqm": 0.44065483446562315,
+      "ci_low": 0.20640887973945257,
+      "ci_high": 0.8084650017328924
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 4,
+      "width": 32,
+      "iqm": 0.2056308671861621,
+      "ci_low": 0.1299291327216489,
+      "ci_high": 0.46580695713424997
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 4,
+      "width": 64,
+      "iqm": 0.2075331904748006,
+      "ci_low": 0.05271737035728913,
+      "ci_high": 0.4645492862670044
+    },
+    {
+      "task": "pursuit_evasion",
+      "size": 100,
+      "depth": 4,
+      "width": 128,
+      "iqm": 0.3823097032612861,
+      "ci_low": 0.15384673881685015,
+      "ci_high": 0.5501339809990309
+    }
+  ],
+  "total_timesteps": [
+    {
+      "config": "embedding_scaling_rendezvous_4agents_ppo",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 4,
+      "num_vec_envs": 8,
+      "total_timesteps": 8000000
+    },
+    {
+      "config": "embedding_scaling_rendezvous_16agents_ppo",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 16,
+      "num_vec_envs": 4,
+      "total_timesteps": 16000000
+    },
+    {
+      "config": "embedding_scaling_rendezvous_50agents_ppo",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 50,
+      "num_vec_envs": 1,
+      "total_timesteps": 12500000
+    },
+    {
+      "config": "embedding_scaling_rendezvous_100agents_ppo",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 100,
+      "num_vec_envs": 1,
+      "total_timesteps": 25000000
+    },
+    {
+      "config": "embedding_scaling_pursuit_evasion_4agents_ppo",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 4,
+      "num_vec_envs": 8,
+      "total_timesteps": 16000000
+    },
+    {
+      "config": "embedding_scaling_pursuit_evasion_16agents_ppo",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 16,
+      "num_vec_envs": 4,
+      "total_timesteps": 32000000
+    },
+    {
+      "config": "embedding_scaling_pursuit_evasion_50agents_ppo",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 50,
+      "num_vec_envs": 1,
+      "total_timesteps": 25000000
+    },
+    {
+      "config": "embedding_scaling_pursuit_evasion_100agents_ppo",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 100,
+      "num_vec_envs": 1,
+      "total_timesteps": 50000000
+    },
+    {
+      "config": "architecture_scalability_rendezvous_4agents",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 4,
+      "num_vec_envs": 8,
+      "total_timesteps": 8000000
+    },
+    {
+      "config": "architecture_scalability_rendezvous_16agents",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 16,
+      "num_vec_envs": 4,
+      "total_timesteps": 16000000
+    },
+    {
+      "config": "architecture_scalability_rendezvous_50agents",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 50,
+      "num_vec_envs": 1,
+      "total_timesteps": 12500000
+    },
+    {
+      "config": "architecture_scalability_rendezvous_100agents",
+      "n_iterations": 500,
+      "n_steps": 500,
+      "n_agents": 100,
+      "num_vec_envs": 1,
+      "total_timesteps": 25000000
+    },
+    {
+      "config": "architecture_scalability_pursuit_evasion_4agents",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 4,
+      "num_vec_envs": 8,
+      "total_timesteps": 16000000
+    },
+    {
+      "config": "architecture_scalability_pursuit_evasion_16agents",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 16,
+      "num_vec_envs": 4,
+      "total_timesteps": 32000000
+    },
+    {
+      "config": "architecture_scalability_pursuit_evasion_50agents",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 50,
+      "num_vec_envs": 1,
+      "total_timesteps": 25000000
+    },
+    {
+      "config": "architecture_scalability_pursuit_evasion_100agents",
+      "n_iterations": 1000,
+      "n_steps": 500,
+      "n_agents": 100,
+      "num_vec_envs": 1,
+      "total_timesteps": 50000000
+    }
+  ],
+  "seed_completeness_flags": []
+}

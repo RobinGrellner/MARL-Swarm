@@ -1,0 +1,20 @@
+embedding_scaling_pursuit_evasion_16agents_ppo  [PPO, embedding, pursuit_evasion, size 16]
+==========================================================================================
+
+Aggregate scores (point [95% CI]):
+                            Median                   IQM                  Mean        Optimality Gap
+config                                                                                              
+embed_dim128  0.498 [0.203, 0.783]  0.504 [0.126, 0.865]  0.498 [0.203, 0.783]  0.502 [0.217, 0.797]
+embed_dim16   0.869 [0.767, 0.949]  0.898 [0.728, 0.963]  0.869 [0.767, 0.949]  0.131 [0.051, 0.233]
+embed_dim32   0.839 [0.700, 0.958]  0.867 [0.650, 0.980]  0.839 [0.700, 0.958]  0.161 [0.042, 0.300]
+embed_dim4    0.823 [0.644, 0.964]  0.879 [0.580, 0.978]  0.823 [0.644, 0.964]  0.177 [0.036, 0.356]
+embed_dim64   0.808 [0.698, 0.923]  0.795 [0.684, 0.973]  0.808 [0.698, 0.923]  0.192 [0.077, 0.302]
+embed_dim8    0.984 [0.964, 0.998]  0.991 [0.958, 0.999]  0.984 [0.964, 0.998]  0.016 [0.002, 0.036]
+
+Probability of improvement vs reference:
+    config_x    config_y  p_improvement  ci_low  ci_high
+embed_dim128 embed_dim64           0.16    0.00     0.48
+ embed_dim16 embed_dim64           0.56    0.16     1.00
+ embed_dim32 embed_dim64           0.60    0.20     1.00
+  embed_dim4 embed_dim64           0.56    0.20     1.00
+  embed_dim8 embed_dim64           0.88    0.60     1.00

@@ -1,0 +1,9 @@
+config_x,config_y,p_improvement,ci_low,ci_high
+phi_layers1_phi_hidden_width128,phi_layers4_phi_hidden_width64,0.92,0.68,1.0
+phi_layers1_phi_hidden_width32,phi_layers4_phi_hidden_width64,0.64,0.2,1.0
+phi_layers1_phi_hidden_width64,phi_layers4_phi_hidden_width64,0.76,0.4,1.0
+phi_layers2_phi_hidden_width128,phi_layers4_phi_hidden_width64,0.44,0.0,0.84
+phi_layers2_phi_hidden_width32,phi_layers4_phi_hidden_width64,0.52,0.16,1.0
+phi_layers2_phi_hidden_width64,phi_layers4_phi_hidden_width64,0.52,0.16,1.0
+phi_layers4_phi_hidden_width128,phi_layers4_phi_hidden_width64,0.52,0.16,0.88
+phi_layers4_phi_hidden_width32,phi_layers4_phi_hidden_width64,0.6,0.2,1.0

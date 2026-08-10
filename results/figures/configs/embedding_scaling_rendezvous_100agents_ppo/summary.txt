@@ -1,0 +1,20 @@
+embedding_scaling_rendezvous_100agents_ppo  [PPO, embedding, rendezvous, size 100]
+==================================================================================
+
+Aggregate scores (point [95% CI]):
+                            Median                   IQM                  Mean        Optimality Gap
+config                                                                                              
+embed_dim128  0.555 [0.275, 0.758]  0.627 [0.214, 0.809]  0.555 [0.275, 0.758]  0.445 [0.242, 0.725]
+embed_dim16   0.552 [0.192, 0.911]  0.601 [0.029, 0.946]  0.552 [0.192, 0.911]  0.448 [0.089, 0.808]
+embed_dim32   0.379 [0.111, 0.648]  0.385 [0.024, 0.719]  0.379 [0.111, 0.648]  0.621 [0.352, 0.889]
+embed_dim4    0.301 [0.104, 0.629]  0.167 [0.081, 0.705]  0.301 [0.104, 0.629]  0.699 [0.371, 0.896]
+embed_dim64   0.550 [0.273, 0.828]  0.553 [0.166, 0.930]  0.550 [0.273, 0.828]  0.450 [0.172, 0.727]
+embed_dim8    0.452 [0.179, 0.726]  0.442 [0.082, 0.805]  0.452 [0.179, 0.726]  0.548 [0.274, 0.821]
+
+Probability of improvement vs reference:
+    config_x    config_y  p_improvement  ci_low  ci_high
+embed_dim128 embed_dim64           0.52    0.16     1.00
+ embed_dim16 embed_dim64           0.44    0.08     0.80
+ embed_dim32 embed_dim64           0.32    0.04     0.72
+  embed_dim4 embed_dim64           0.28    0.00     0.64
+  embed_dim8 embed_dim64           0.40    0.08     0.80
