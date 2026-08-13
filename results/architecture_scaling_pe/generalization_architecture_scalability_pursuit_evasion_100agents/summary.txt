@@ -1,0 +1,36 @@
+Zero-shot cross-size generalization: architecture_scalability_pursuit_evasion_100agents
+Trained at swarm size 100; tested at [4, 8, 16, 32, 50, 100].
+Score = IQM over the 5 PPO runs (task = test swarm size).
+
+                             4         8        16        32        50       100
+[reward] phi1_w32      -815.21   -651.44   -496.03   -297.91   -167.57    -28.58
+[reward] phi1_w64      -710.11   -526.09   -397.27   -269.34   -180.56    -53.45
+[reward] phi1_w128     -882.92   -701.55   -516.81   -348.64   -270.34   -108.56
+[reward] phi2_w32      -843.02   -663.35   -485.59   -325.12   -219.56   -122.99
+[reward] phi2_w64      -923.59   -724.06   -535.70   -380.72   -299.75   -200.31
+[reward] phi2_w128     -890.66   -685.81   -491.59   -346.28   -270.75   -147.93
+[reward] phi4_w32      -924.40   -728.26   -538.04   -380.81   -298.72   -206.46
+[reward] phi4_w64      -918.33   -729.79   -548.56   -383.40   -304.26   -206.19
+[reward] phi4_w128     -891.44   -695.29   -515.48   -366.05   -287.79   -182.91
+
+                             4         8        16        32        50       100
+[fang%]  phi1_w32         0.00      0.00      0.05      0.40      0.65      0.97
+[fang%]  phi1_w64         0.00      0.00      0.04      0.26      0.49      0.83
+[fang%]  phi1_w128        0.00      0.00      0.01      0.09      0.21      0.63
+[fang%]  phi2_w32         0.00      0.00      0.03      0.15      0.28      0.43
+[fang%]  phi2_w64         0.00      0.00      0.00      0.00      0.00      0.07
+[fang%]  phi2_w128        0.00      0.00      0.00      0.01      0.04      0.37
+[fang%]  phi4_w32         0.00      0.00      0.00      0.00      0.00      0.01
+[fang%]  phi4_w64         0.00      0.00      0.00      0.00      0.00      0.02
+[fang%]  phi4_w128        0.00      0.00      0.00      0.00      0.01      0.16
+
+                             4         8        16        32        50       100
+[fangT]  phi1_w32          nan       nan       nan       nan       nan      71.6
+[fangT]  phi1_w64          nan       nan       nan       nan       nan       nan
+[fangT]  phi1_w128         nan       nan       nan       nan       nan     192.8
+[fangT]  phi2_w32          nan       nan       nan       nan       nan     209.6
+[fangT]  phi2_w64          nan       nan       nan       nan       nan     236.3
+[fangT]  phi2_w128         nan       nan       nan       nan       nan       nan
+[fangT]  phi4_w32          nan       nan       nan       nan       nan       nan
+[fangT]  phi4_w64          nan       nan       nan       nan       nan       nan
+[fangT]  phi4_w128         nan       nan       nan       nan       nan       nan
