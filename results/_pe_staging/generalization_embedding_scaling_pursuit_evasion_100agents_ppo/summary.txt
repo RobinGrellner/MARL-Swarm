@@ -1,0 +1,27 @@
+Zero-shot cross-size generalization: embedding_scaling_pursuit_evasion_100agents_ppo
+Trained at swarm size 100; tested at [4, 8, 16, 32, 50, 100].
+Score = IQM over the 5 PPO runs (task = test swarm size).
+
+                             4         8        16        32        50       100
+[reward] embed_dim4    -738.11   -560.97   -343.19   -183.58   -109.11    -12.19
+[reward] embed_dim8    -629.23   -476.11   -354.23   -225.82   -111.38    -22.32
+[reward] embed_dim16   -863.72   -693.60   -519.56   -362.68   -260.21   -115.70
+[reward] embed_dim32   -879.32   -718.04   -539.43   -381.31   -316.85   -209.52
+[reward] embed_dim64   -829.02   -613.28   -446.78   -304.58   -220.91    -92.17
+[reward] embed_dim128   -891.88   -692.24   -501.98   -330.00   -248.35   -140.44
+
+                             4         8        16        32        50       100
+[fang%]  embed_dim4       0.00      0.05      0.23      0.50      0.72      0.99
+[fang%]  embed_dim8       0.00      0.00      0.09      0.38      0.77      0.99
+[fang%]  embed_dim16      0.00      0.00      0.01      0.07      0.21      0.55
+[fang%]  embed_dim32      0.00      0.00      0.00      0.00      0.00      0.29
+[fang%]  embed_dim64      0.00      0.00      0.02      0.07      0.27      0.81
+[fang%]  embed_dim128      0.00      0.00      0.00      0.04      0.14      0.32
+
+                             4         8        16        32        50       100
+[fangT]  embed_dim4        nan       nan       nan     244.2     139.7      45.5
+[fangT]  embed_dim8        nan       nan       nan     491.4     344.5     140.6
+[fangT]  embed_dim16       nan       nan       nan       nan       nan     181.9
+[fangT]  embed_dim32       nan       nan       nan       nan       nan       nan
+[fangT]  embed_dim64       nan       nan       nan       nan       nan     376.8
+[fangT]  embed_dim128       nan       nan       nan       nan       nan     265.8
